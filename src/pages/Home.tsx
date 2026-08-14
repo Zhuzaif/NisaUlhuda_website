@@ -517,10 +517,6 @@ export const Home: React.FC = () => {
 
             {/* Left Column: Text & Buttons */}
             <div className="w-full md:w-7/12 py-12 md:py-16 space-y-6 text-center md:text-left z-20">
-              <div className="w-14 h-14 rounded-full border-[2px] border-[#c59d5f] flex items-center justify-center bg-white overflow-hidden shadow-sm mx-auto md:mx-0">
-                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Nisa Logo" className="w-full h-full object-contain p-1" />
-              </div>
-
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold italic text-slate-900 leading-tight">
                 Download Nisa Ul Huda Free
               </h2>

@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1e293b;
+  --color-accent: #c59d5f;
+  --color-accent-gold: #d4af37;
+  --color-bg-light: #ffffff;
+  --color-bg-soft: #f9f8f6;
+  --color-text-dark: #1e293b;
+  --color-text-[#64748b]: #64748b;
+
+  --font-serif: 'Amiri', 'Noto Naskh Arabic', Georgia, serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: #ffffff;
+    color: #1e293b;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+  }
+}
+
+@layer utilities {
+  /* Arch / Mihrab Shaped Card (Matches user reference template) */
+  .arch-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-top-left-radius: 4rem;
+    border-top-right-radius: 4rem;
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .arch-card:hover {
+    border-color: #c59d5f;
+    transform: translateY(-5px);
+    box-shadow: 0 20px 35px -5px rgba(197, 157, 95, 0.2);
+  }
+
+  .btn-outline-gold {
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    border-radius: 9999px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .btn-outline-gold:hover {
+    background-color: #c59d5f;
+    border-color: #c59d5f;
+    color: #ffffff;
+  }
+
+  .btn-solid-gold {
+    background-color: #c59d5f;
+    color: #ffffff;
+    border-radius: 9999px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .btn-solid-gold:hover {
+    background-color: #b38a4d;
+    box-shadow: 0 10px 25px rgba(197, 157, 95, 0.4);
+  }
+}

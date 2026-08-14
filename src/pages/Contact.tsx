@@ -52,7 +52,7 @@ const Contact: React.FC = () => {
         {/* Background Image & Gradient */}
         <div className="absolute inset-0 z-0">
           <img
-            src="/white_mosque_bg.png"
+            src={`${import.meta.env.BASE_URL}white_mosque_bg.png`}
             alt="Contact Us Background"
             className="w-full h-full object-cover object-center opacity-40"
           />
@@ -95,7 +95,7 @@ const Contact: React.FC = () => {
 
         {/* Decorative Lantern Hanging from the banner boundary */}
         <div className="absolute -top-1 right-4 lg:right-16 w-32 md:w-48 lg:w-56 z-40 pointer-events-none">
-          <img src="/letern-for-contect.svg" alt="Decorative Lantern" className="w-full h-auto object-contain drop-shadow-5xl" />
+          <img src={`${import.meta.env.BASE_URL}letern-for-contect.svg`} alt="Decorative Lantern" className="w-full h-auto object-contain drop-shadow-5xl" />
         </div>
 
         {/* Header Section */}
@@ -219,7 +219,7 @@ const Contact: React.FC = () => {
               {/* Background Image for Card */}
               <div className="absolute inset-0 z-0 pointer-events-none">
                 <img 
-                  src="/card-bg.png" 
+                  src={`${import.meta.env.BASE_URL}card-bg.png`} 
                   alt="Card Background Pattern" 
                   className="w-full h-full object-cover opacity-20 mix-blend-screen"
                 />

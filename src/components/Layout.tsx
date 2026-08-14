@@ -53,7 +53,7 @@ const Layout = () => {
             {/* Logo matching Azan template style */}
             <Link to="/" className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-full border-2 border-[#c59d5f] flex items-center justify-center bg-white shadow-xl overflow-hidden">
-                <img src="/logo.png" alt="Nisa Ul Huda Logo" className="w-full h-full object-contain p-0.5" />
+                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Nisa Ul Huda Logo" className="w-full h-full object-contain p-0.5" />
               </div>
               <div className="flex flex-col">
                 <span className="text-2xl font-bold text-white font-serif tracking-wider">

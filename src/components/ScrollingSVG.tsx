@@ -139,7 +139,7 @@ const ScrollingSVG: React.FC = () => {
       >
         <img
           ref={imgRef}
-          src="/A Theme For Every Mood.svg"
+          src={`${import.meta.env.BASE_URL}A Theme For Every Mood.svg`}
           alt=""
           className={`w-full h-full will-change-transform ${isClickable ? 'group-hover:scale-110 transition-transform' : ''}`}
           draggable={false}

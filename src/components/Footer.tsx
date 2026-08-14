@@ -78,7 +78,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-5 font-sans">
               <li className="flex items-start gap-3 text-slate-400 text-sm">
                 <Mail size={18} className="text-[#c59d5f] mt-1 shrink-0" />
-                <span className="leading-relaxed">infohudalabs@gmail.com<br />huzaifasura970@gmail.com</span>
+                <span className="leading-relaxed">nisa@hudalabs.app<br />support@hudalabs.app</span>
               </li>
               <li className="flex items-start gap-3 text-slate-400 text-sm">
                 <Phone size={18} className="text-[#c59d5f] mt-0.5 shrink-0" />

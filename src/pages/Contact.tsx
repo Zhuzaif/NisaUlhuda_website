@@ -242,10 +242,10 @@ const Contact: React.FC = () => {
                     Phone : +92 343 4797817
                   </p>
                   <p className="text-slate-300 text-sm mb-1">
-                    Email : infohudalabs@gmail.com
+                    Email : nisa@hudalabs.app
                   </p>
                   <p className="text-slate-300 text-sm">
-                    Email : huzaifasura970@gmail.com
+                    Email : support@hudalabs.app
                   </p>
                 </div>
 

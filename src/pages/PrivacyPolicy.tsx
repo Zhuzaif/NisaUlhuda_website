@@ -133,7 +133,7 @@ const PrivacyPolicy: React.FC = () => {
                 <h4 className="font-serif text-3xl text-gray-900 font-bold m-0">Contact Us</h4>
               </div>
               <p className="leading-relaxed">
-                If you have any questions about this Privacy Policy, you can contact us at: <a href="mailto:huzaifasura970@gmail.com" className="font-medium text-[#D4AF37] hover:text-[#b3922d] transition-colors">huzaifasura970@gmail.com</a>
+                If you have any questions about this Privacy Policy, you can contact us at: <a href="mailto:nisa@hudalabs.app" className="font-medium text-[#D4AF37] hover:text-[#b3922d] transition-colors">nisa@hudalabs.app</a>
               </p>
             </div>
 

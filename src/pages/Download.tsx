@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Apple, Smartphone, QrCode, Star, Download as DownloadIcon } from 'lucide-react';
+import { Smartphone, QrCode, Star, Download as DownloadIcon } from 'lucide-react';
 
 const AppleIcon = ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 384 512" fill="currentColor" className={className} {...props}>

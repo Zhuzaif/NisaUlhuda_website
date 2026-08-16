@@ -16,32 +16,32 @@ const PlayStoreIcon = ({ className, ...props }: React.SVGProps<SVGSVGElement>) =
 
 const features = [
   {
-    image: `${import.meta.env.BASE_URL}feature_prayer_times.png`,
+    image: `${import.meta.env.BASE_URL}feature_prayer_times.webp`,
     title: 'Accurate Prayer Times',
     description: 'Get precise prayer timings based on your current location with multiple convention settings available.'
   },
   {
-    image: `${import.meta.env.BASE_URL}feature_quran.png`,
+    image: `${import.meta.env.BASE_URL}feature_quran.webp`,
     title: 'The Holy Quran',
     description: 'Read the Quran in Arabic with beautiful fonts, alongside translations in 40+ languages and audio recitations.'
   },
   {
-    image: `${import.meta.env.BASE_URL}feature_qibla.png`,
+    image: `${import.meta.env.BASE_URL}feature_qibla.webp`,
     title: 'Qibla Finder',
     description: 'An interactive AR compass to show you the exact direction to the Kaaba from anywhere in the world.'
   },
   {
-    image: `${import.meta.env.BASE_URL}feature_adhkar.png`,
+    image: `${import.meta.env.BASE_URL}feature_adhkar.webp`,
     title: 'Daily Adhkar & Duas',
     description: 'A comprehensive collection of daily supplications, Hisnul Muslim, and morning/evening adhkar.'
   },
   {
-    image: `${import.meta.env.BASE_URL}feature_calendar.png`,
+    image: `${import.meta.env.BASE_URL}feature_calendar.webp`,
     title: 'Hijri Calendar',
     description: 'Track Islamic dates, upcoming events like Ramadan and Eid, and convert between Gregorian and Hijri dates.'
   },
   {
-    image: `${import.meta.env.BASE_URL}feature_adhan.png`,
+    image: `${import.meta.env.BASE_URL}feature_adhan.webp`,
     title: 'Adhan Notifications',
     description: 'Beautiful visual and audio notifications with voices of famous muezzins for the call to prayer.'
   }
@@ -173,7 +173,7 @@ const Download: React.FC = () => {
         {/* Dark Background Section */}
         <div className="relative pt-32 pb-24 lg:pt-40 lg:pb-28 bg-[#111421] flex flex-col items-center text-center px-4">
           <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}download_hero_bg.png)` }}></div>
+            <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}download_hero_bg.webp)` }}></div>
             <div className="absolute inset-0 bg-gradient-to-b from-[#0a0c16]/90 via-[#111421]/80 to-[#070911]"></div>
             <div className="absolute inset-0 bg-gradient-to-r from-[#0a0c16]/90 via-transparent to-[#0a0c16]/90"></div>
           </div>

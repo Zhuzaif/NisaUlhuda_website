@@ -7,11 +7,11 @@ import ScrollingSVG from '../components/ScrollingSVG';
 export const Home: React.FC = () => {
   // 5 Core Features with Custom Generated High-Res Photography inside Arch Cards
   const archFeatures = [
-    { title: 'Ask Aalima', subtitle: 'Scholar Guidance', src: '/ask_aalima_photo.png' },
-    { title: 'Purity Tracker', subtitle: 'Ghusl & Period Mode', src: '/purity_tracker_photo.png' },
-    { title: 'Prayer & Qibla', subtitle: 'Adhan & Compass', src: '/qibla_compass_photo.png' },
-    { title: 'Al-Quran', subtitle: 'Translations & Audio', src: '/quran_rehal.png' },
-    { title: 'Tasbeeh', subtitle: 'Haptic Dhikr Beads', src: '/tasbeeh_dhikr_photo.png' },
+    { title: 'Ask Aalima', subtitle: 'Scholar Guidance', src: `${import.meta.env.BASE_URL}ask_aalima_photo.webp` },
+    { title: 'Purity Tracker', subtitle: 'Ghusl & Period Mode', src: `${import.meta.env.BASE_URL}purity_tracker_photo.webp` },
+    { title: 'Prayer & Qibla', subtitle: 'Adhan & Compass', src: `${import.meta.env.BASE_URL}qibla_compass_photo.webp` },
+    { title: 'Al-Quran', subtitle: 'Translations & Audio', src: `${import.meta.env.BASE_URL}quran_rehal.webp` },
+    { title: 'Tasbeeh', subtitle: 'Haptic Dhikr Beads', src: `${import.meta.env.BASE_URL}tasbeeh_dhikr_photo.webp` },
   ];
 
   return (
@@ -28,7 +28,7 @@ export const Home: React.FC = () => {
         {/* Full-width Mosque Background */}
         <div className="absolute inset-0 z-0">
           <img
-            src={`${import.meta.env.BASE_URL}mosque_hero.png`}
+            src={`${import.meta.env.BASE_URL}mosque_hero.webp`}
             alt="Majestic Mosque Background"
             className="w-full h-full object-cover object-center opacity-40"
           />
@@ -129,7 +129,7 @@ export const Home: React.FC = () => {
               <div className="flex justify-center">
                 <img
                   id="svg-wp-about-phone"
-                  src={`${import.meta.env.BASE_URL}2.png`}
+                  src={`${import.meta.env.BASE_URL}2.webp`}
                   alt="Nisa Ul Huda Dashboard"
                   className="w-full max-w-[280px] sm:max-w-[320px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                 />
@@ -139,7 +139,7 @@ export const Home: React.FC = () => {
               <div className="flex flex-col gap-4">
                 <div className="rounded-2xl overflow-hidden shadow-md border border-slate-100 h-[185px]">
                   <img
-                    src={`${import.meta.env.BASE_URL}mosque_arch.png`}
+                    src={`${import.meta.env.BASE_URL}mosque_arch.webp`}
                     alt="Mosque Arch View"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   />
@@ -147,7 +147,7 @@ export const Home: React.FC = () => {
 
                 <div className="rounded-2xl overflow-hidden shadow-md border border-slate-100 h-[185px]">
                   <img
-                    src={`${import.meta.env.BASE_URL}quran_rehal.png`}
+                    src={`${import.meta.env.BASE_URL}quran_rehal.webp`}
                     alt="Holy Quran on Stand"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   />
@@ -223,7 +223,7 @@ export const Home: React.FC = () => {
         {/* Feature 1: Al-Quran */}
         <section className="relative w-full flex items-center py-8 text-white bg-slate-900 overflow-hidden shadow-xl">
           <img
-            src={`${import.meta.env.BASE_URL}quran_rehal.png`}
+            src={`${import.meta.env.BASE_URL}quran_rehal.webp`}
             alt="Al-Quran Background"
             className="absolute inset-0 w-full h-full object-cover opacity-25"
           />
@@ -266,7 +266,7 @@ export const Home: React.FC = () => {
               >
                 <img
                   id="svg-wp-quran-phone"
-                  src={`${import.meta.env.BASE_URL}7.png`}
+                  src={`${import.meta.env.BASE_URL}7.webp`}
                   alt="Al-Quran Screen"
                   className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                 />
@@ -318,14 +318,14 @@ export const Home: React.FC = () => {
                 <div className="flex justify-center order-2 sm:order-1">
                   <img
                     id="svg-wp-purity-phone"
-                    src={`${import.meta.env.BASE_URL}6.png`}
+                    src={`${import.meta.env.BASE_URL}6.webp`}
                     alt="Purity Tracker Screen"
                     className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                   />
                 </div>
                 <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200 h-[360px] order-1 sm:order-2">
                   <img
-                    src={`${import.meta.env.BASE_URL}purity_tracker_photo.png`}
+                    src={`${import.meta.env.BASE_URL}purity_tracker_photo.webp`}
                     alt="Purity Water & Flowers"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   />
@@ -338,7 +338,7 @@ export const Home: React.FC = () => {
         {/* Feature 3: Prayer Times & Qibla Compass */}
         <section className="relative w-full flex items-center py-8 text-white bg-slate-900 overflow-hidden shadow-xl">
           <img
-            src={`${import.meta.env.BASE_URL}qibla_compass_photo.png`}
+            src={`${import.meta.env.BASE_URL}qibla_compass_photo.webp`}
             alt="Qibla Compass Photo"
             className="absolute inset-0 w-full h-full object-cover opacity-25"
           />
@@ -381,7 +381,7 @@ export const Home: React.FC = () => {
               >
                 <img
                   id="svg-wp-prayer-phone"
-                  src={`${import.meta.env.BASE_URL}3.png`}
+                  src={`${import.meta.env.BASE_URL}3.webp`}
                   alt="Prayer Schedule Screen"
                   className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                 />
@@ -433,14 +433,14 @@ export const Home: React.FC = () => {
                 <div className="flex justify-center order-2 sm:order-1">
                   <img
                     id="svg-wp-tasbeeh-phone"
-                    src={`${import.meta.env.BASE_URL}9.png`}
+                    src={`${import.meta.env.BASE_URL}9.webp`}
                     alt="Tasbeeh Counter Screen"
                     className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                   />
                 </div>
                 <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200 h-[360px] order-1 sm:order-2">
                   <img
-                    src={`${import.meta.env.BASE_URL}tasbeeh_dhikr_photo.png`}
+                    src={`${import.meta.env.BASE_URL}tasbeeh_dhikr_photo.webp`}
                     alt="Tasbeeh Beads Photo"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   />
@@ -453,7 +453,7 @@ export const Home: React.FC = () => {
         {/* Feature 5: Authentic Fiqh Library Banner */}
         <section className="relative w-full flex items-center py-8 text-white bg-slate-900 overflow-hidden shadow-2xl">
           <img
-            src={`${import.meta.env.BASE_URL}fiqh_library_photo.png`}
+            src={`${import.meta.env.BASE_URL}fiqh_library_photo.webp`}
             alt="Islamic Library Books"
             className="absolute inset-0 w-full h-full object-cover opacity-30"
           />
@@ -487,7 +487,7 @@ export const Home: React.FC = () => {
                 transition={{ duration: 0.7 }}
                 className="lg:col-span-5 flex justify-center mt-8 lg:mt-0"
               >
-                <img id="svg-wp-fiqh-phone" src={`${import.meta.env.BASE_URL}8.png`} alt="Fiqh Library Screen" className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500" />
+                <img id="svg-wp-fiqh-phone" src={`${import.meta.env.BASE_URL}8.webp`} alt="Fiqh Library Screen" className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500" />
               </motion.div>
             </div>
           </div>
@@ -504,7 +504,7 @@ export const Home: React.FC = () => {
         {/* Banner Background Image (White Mosque) */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <img
-            src={`${import.meta.env.BASE_URL}white_mosque_bg.png`}
+            src={`${import.meta.env.BASE_URL}white_mosque_bg.webp`}
             alt="White Mosque Banner Background"
             className="w-full h-full object-cover opacity-30 mix-blend-multiply"
           />
@@ -518,7 +518,7 @@ export const Home: React.FC = () => {
             {/* Left Column: Text & Buttons */}
             <div className="w-full md:w-7/12 py-12 md:py-16 space-y-6 text-center md:text-left z-20">
               <div className="w-14 h-14 rounded-full border-[2px] border-[#c59d5f] flex items-center justify-center bg-white overflow-hidden shadow-sm mx-auto md:mx-0">
-                <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Nisa Logo" className="w-full h-full object-contain p-1" />
+                <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Nisa Logo" className="w-full h-full object-contain p-1" />
               </div>
 
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold italic text-slate-900 leading-tight">
@@ -542,7 +542,7 @@ export const Home: React.FC = () => {
             <div className="w-full md:w-5/12 h-72 sm:h-80 md:h-full relative mt-12 md:mt-0 flex justify-center md:block">
               <img
                 id="svg-wp-woman"
-                src={`${import.meta.env.BASE_URL}woman_cutout_banner.png`}
+                src={`${import.meta.env.BASE_URL}woman_cutout_banner.webp`}
                 alt="Muslim woman holding Nisa Ul Huda app"
                 className="relative md:absolute bottom-0 md:right-0 w-auto h-full md:h-[520px] max-w-none object-contain object-bottom drop-shadow-2xl z-30 md:-mb-[205px]"
               />

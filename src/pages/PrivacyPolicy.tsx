@@ -16,7 +16,7 @@ const PrivacyPolicy: React.FC = () => {
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <img 
-            src={`${import.meta.env.BASE_URL}image for privacy and terms.avif`} 
+            src={`${import.meta.env.BASE_URL}image for privacy and terms.webp`} 
             alt="Mosque Interior" 
             className="w-full h-full object-cover opacity-30 mix-blend-overlay"
           />

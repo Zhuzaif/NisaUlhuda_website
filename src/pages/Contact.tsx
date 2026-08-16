@@ -13,10 +13,10 @@ const Contact: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormStatus("submitting");
-    
+
     const form = e.currentTarget;
     const formData = new FormData(form);
-    
+
     try {
       const response = await fetch("https://formspree.io/f/xyegjeja", {
         method: "POST",
@@ -25,7 +25,7 @@ const Contact: React.FC = () => {
           "Accept": "application/json"
         },
       });
-      
+
       if (response.ok) {
         setFormStatus("success");
         e.currentTarget.reset();
@@ -95,7 +95,7 @@ const Contact: React.FC = () => {
 
         {/* Decorative Lantern Hanging from the banner boundary */}
         <div className="absolute -top-1 right-4 lg:right-16 w-32 md:w-48 lg:w-56 z-40 pointer-events-none">
-          <img src={`${import.meta.env.BASE_URL}letern-for-contect.webp`} alt="Decorative Lantern" className="w-full h-auto object-contain drop-shadow-5xl" />
+          <img src={`${import.meta.env.BASE_URL}letern-for-contect.svg`} alt="Decorative Lantern" className="w-full h-auto object-contain drop-shadow-5xl" />
         </div>
 
         {/* Header Section */}
@@ -215,12 +215,12 @@ const Contact: React.FC = () => {
           {/* Right Column: Dark Info Card */}
           <div className="lg:col-span-5 mt-10 lg:mt-0 relative z-10">
             <div className="bg-[#061a14] rounded-[2rem] p-8 sm:p-10 text-white h-full shadow-2xl relative overflow-hidden flex flex-col justify-between pt-16 lg:pt-32">
-              
+
               {/* Background Image for Card */}
               <div className="absolute inset-0 z-0 pointer-events-none">
-                <img 
-                  src={`${import.meta.env.BASE_URL}card-bg.webp`} 
-                  alt="Card Background Pattern" 
+                <img
+                  src={`${import.meta.env.BASE_URL}card-bg.webp`}
+                  alt="Card Background Pattern"
                   className="w-full h-full object-cover opacity-20 mix-blend-screen"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#061a14] via-[#061a14]/50 to-transparent" />
@@ -289,13 +289,13 @@ const Contact: React.FC = () => {
 
         {/* Bottom Map Area */}
         <div className="mt-20 w-full rounded-[2rem] overflow-hidden shadow-xl border border-slate-100 bg-slate-100 relative aspect-[21/9] min-h-[400px]">
-          <iframe 
+          <iframe
             src="https://maps.google.com/maps?q=32.0713417849046,73.6979967156092+(Huda%20Labs)&t=&z=15&ie=UTF8&iwloc=&output=embed"
-            width="100%" 
-            height="100%" 
-            style={{ border: 0 }} 
-            allowFullScreen={false} 
-            loading="lazy" 
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            allowFullScreen={false}
+            loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
             className="absolute inset-0 w-full h-full"
             title="Huda Labs Location"

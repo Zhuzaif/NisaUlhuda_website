@@ -65,7 +65,6 @@ const Footer: React.FC = () => {
               <li><Link to="/contact" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Contact Us</Link></li>
               <li><Link to="/privacy-policy" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Privacy Policy</Link></li>
               <li><Link to="/terms" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Terms & Conditions</Link></li>
-              <li><Link to="/sitemap" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Sitemap</Link></li>
             </ul>
           </div>
 

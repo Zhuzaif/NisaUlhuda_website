@@ -29,7 +29,9 @@ export const Home: React.FC = () => {
         <div className="absolute inset-0 z-0">
           <img
             src={`${import.meta.env.BASE_URL}mosque_hero.webp`}
-            alt="Majestic Mosque Background"
+            alt="Nisa Ul Huda Islamic Mosque Architecture Background"
+            fetchPriority="high"
+            decoding="async"
             className="w-full h-full object-cover object-center opacity-40"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/60 to-slate-950" />
@@ -122,33 +124,39 @@ export const Home: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: false, amount: 0.3 }}
               transition={{ duration: 0.7 }}
-              className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-4 items-center mt-12 lg:mt-0"
+              className="lg:col-span-6 relative flex items-center justify-center sm:grid sm:grid-cols-2 sm:gap-4 mt-12 lg:mt-0 py-6 sm:py-0"
             >
 
-              {/* Left Column: Real Nisa App Screenshot */}
-              <div className="flex justify-center">
+              {/* 1. Mobile Phone (On Top / Foreground) */}
+              <div className="relative z-10 flex justify-center -translate-x-6 sm:translate-x-0 sm:order-1">
                 <img
                   id="svg-wp-about-phone"
                   src={`${import.meta.env.BASE_URL}2.webp`}
-                  alt="Nisa Ul Huda Dashboard"
-                  className="w-full max-w-[280px] sm:max-w-[320px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
+                  alt="Nisa Ul Huda Islamic Companion App Dashboard Screen"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full max-w-[210px] sm:max-w-[320px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                 />
               </div>
 
-              {/* Right Column: High-Res AI Photography Assets */}
-              <div className="flex flex-col gap-4">
-                <div className="rounded-2xl overflow-hidden shadow-md border border-slate-100 h-[185px]">
+              {/* 2. Right Column: High-Res AI Photography Assets (Underneath & peeking from side on mobile) */}
+              <div className="absolute z-0 translate-x-8 sm:translate-x-0 sm:relative sm:z-auto w-[240px] xs:w-[260px] sm:w-full flex flex-col gap-3 sm:gap-4 sm:order-2">
+                <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-100 h-[150px] sm:h-[185px]">
                   <img
                     src={`${import.meta.env.BASE_URL}mosque_arch.webp`}
-                    alt="Mosque Arch View"
+                    alt="Grand Mosque Arch Islamic Architecture"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   />
                 </div>
 
-                <div className="rounded-2xl overflow-hidden shadow-md border border-slate-100 h-[185px]">
+                <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-100 h-[150px] sm:h-[185px]">
                   <img
                     src={`${import.meta.env.BASE_URL}quran_rehal.webp`}
-                    alt="Holy Quran on Stand"
+                    alt="Holy Quran Kareem with Rehal Stand"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   />
                 </div>
@@ -199,7 +207,9 @@ export const Home: React.FC = () => {
                 <div className="w-full aspect-[9/14] rounded-t-[3rem] rounded-b-xl overflow-hidden border border-slate-200 bg-slate-900 shadow-sm mt-1">
                   <img
                     src={feat.src}
-                    alt={feat.title}
+                    alt={`${feat.title} - Nisa Ul Huda Islamic Feature`}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
@@ -224,7 +234,9 @@ export const Home: React.FC = () => {
         <section className="relative w-full flex items-center py-8 text-white bg-slate-900 overflow-hidden shadow-xl">
           <img
             src={`${import.meta.env.BASE_URL}quran_rehal.webp`}
-            alt="Al-Quran Background"
+            alt="Holy Quran Kareem Reading and Audio Recitations"
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover opacity-25"
           />
           <div className="container mx-auto max-w-6xl px-4 relative z-10">
@@ -267,7 +279,9 @@ export const Home: React.FC = () => {
                 <img
                   id="svg-wp-quran-phone"
                   src={`${import.meta.env.BASE_URL}7.webp`}
-                  alt="Al-Quran Screen"
+                  alt="Al-Quran Kareem Mobile Reader Interface with Urdu Translation"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                 />
               </motion.div>
@@ -307,26 +321,33 @@ export const Home: React.FC = () => {
                 </div>
               </motion.div>
 
-              {/* Side-by-Side: Custom AI Photograph + Real Screenshot */}
+              {/* Side-by-Side on Desktop / Layered Overlapping on Mobile */}
               <motion.div
                 initial={{ opacity: 0, x: -40 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: false, amount: 0.3 }}
                 transition={{ duration: 0.7 }}
-                className="lg:col-span-6 lg:order-1 grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-4 items-center mt-8 lg:mt-0"
+                className="lg:col-span-6 lg:order-1 relative flex items-center justify-center sm:grid sm:grid-cols-2 sm:gap-4 mt-8 lg:mt-0 py-6 sm:py-0"
               >
-                <div className="flex justify-center order-2 sm:order-1">
+                {/* 1. Mobile Phone (On Top / Foreground) */}
+                <div className="relative z-10 flex justify-center -translate-x-6 sm:translate-x-0 sm:order-1">
                   <img
                     id="svg-wp-purity-phone"
                     src={`${import.meta.env.BASE_URL}6.webp`}
-                    alt="Purity Tracker Screen"
-                    className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
+                    alt="Nisa Ul Huda Women Purity and Period Mode Tracker Interface"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full max-w-[210px] sm:max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                   />
                 </div>
-                <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200 h-[360px] order-1 sm:order-2">
+
+                {/* 2. Purity Photo (Underneath / Peeking from side due to wider width) */}
+                <div className="absolute z-0 translate-x-8 sm:translate-x-0 sm:relative sm:z-auto rounded-2xl overflow-hidden shadow-xl border border-slate-200 w-[260px] sm:w-full h-[310px] sm:h-[360px] sm:order-2">
                   <img
                     src={`${import.meta.env.BASE_URL}purity_tracker_photo.webp`}
-                    alt="Purity Water & Flowers"
+                    alt="Islamic Purity and Ghusl Concepts"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   />
                 </div>
@@ -339,7 +360,9 @@ export const Home: React.FC = () => {
         <section className="relative w-full flex items-center py-8 text-white bg-slate-900 overflow-hidden shadow-xl">
           <img
             src={`${import.meta.env.BASE_URL}qibla_compass_photo.webp`}
-            alt="Qibla Compass Photo"
+            alt="Accurate Qibla Compass Kaaba Direction Locator"
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover opacity-25"
           />
           <div className="container mx-auto max-w-6xl px-4 relative z-10">
@@ -382,7 +405,9 @@ export const Home: React.FC = () => {
                 <img
                   id="svg-wp-prayer-phone"
                   src={`${import.meta.env.BASE_URL}3.webp`}
-                  alt="Prayer Schedule Screen"
+                  alt="Accurate Location-Based Islamic Prayer Times and Adhan Interface"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                 />
               </motion.div>
@@ -422,26 +447,33 @@ export const Home: React.FC = () => {
                 </div>
               </motion.div>
 
-              {/* Side-by-Side: Custom AI Photograph + Real Screenshot */}
+              {/* Side-by-Side on Desktop / Layered Overlapping on Mobile */}
               <motion.div
                 initial={{ opacity: 0, x: -40 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: false, amount: 0.3 }}
                 transition={{ duration: 0.7 }}
-                className="lg:col-span-6 lg:order-1 grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-4 items-center mt-8 lg:mt-0"
+                className="lg:col-span-6 lg:order-1 relative flex items-center justify-center sm:grid sm:grid-cols-2 sm:gap-4 mt-8 lg:mt-0 py-6 sm:py-0"
               >
-                <div className="flex justify-center order-2 sm:order-1">
+                {/* 1. Mobile Phone (On Top / Foreground) */}
+                <div className="relative z-10 flex justify-center -translate-x-6 sm:translate-x-0 sm:order-1">
                   <img
                     id="svg-wp-tasbeeh-phone"
                     src={`${import.meta.env.BASE_URL}9.webp`}
-                    alt="Tasbeeh Counter Screen"
-                    className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
+                    alt="Digital Tasbeeh and Azkar Counter Interface"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full max-w-[210px] sm:max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
                   />
                 </div>
-                <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200 h-[360px] order-1 sm:order-2">
+
+                {/* 2. Tasbeeh Photo (Underneath / Peeking from side due to wider width) */}
+                <div className="absolute z-0 translate-x-8 sm:translate-x-0 sm:relative sm:z-auto rounded-2xl overflow-hidden shadow-xl border border-slate-200 w-[260px] sm:w-full h-[310px] sm:h-[360px] sm:order-2">
                   <img
                     src={`${import.meta.env.BASE_URL}tasbeeh_dhikr_photo.webp`}
-                    alt="Tasbeeh Beads Photo"
+                    alt="Islamic Dhikr and Tasbeeh Beads"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                   />
                 </div>
@@ -454,7 +486,9 @@ export const Home: React.FC = () => {
         <section className="relative w-full flex items-center py-8 text-white bg-slate-900 overflow-hidden shadow-2xl">
           <img
             src={`${import.meta.env.BASE_URL}fiqh_library_photo.webp`}
-            alt="Islamic Library Books"
+            alt="Authentic Islamic Fiqh and Scholarly Books Library"
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover opacity-30"
           />
           <div className="container mx-auto max-w-6xl px-4 relative z-10">
@@ -487,7 +521,7 @@ export const Home: React.FC = () => {
                 transition={{ duration: 0.7 }}
                 className="lg:col-span-5 flex justify-center mt-8 lg:mt-0"
               >
-                <img id="svg-wp-fiqh-phone" src={`${import.meta.env.BASE_URL}8.webp`} alt="Fiqh Library Screen" className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500" />
+                <img id="svg-wp-fiqh-phone" src={`${import.meta.env.BASE_URL}8.webp`} alt="Searchable Islamic Fiqh Topics Library Screen" loading="lazy" decoding="async" className="w-full max-w-[250px] h-auto drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500" />
               </motion.div>
             </div>
           </div>
@@ -505,7 +539,9 @@ export const Home: React.FC = () => {
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           <img
             src={`${import.meta.env.BASE_URL}white_mosque_bg.webp`}
-            alt="White Mosque Banner Background"
+            alt="White Mosque Spiritual Background"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover opacity-30 mix-blend-multiply"
           />
           {/* Vibrant bright gradient overlay that keeps text readable */}
@@ -518,7 +554,7 @@ export const Home: React.FC = () => {
             {/* Left Column: Text & Buttons */}
             <div className="w-full md:w-7/12 py-12 md:py-16 space-y-6 text-center md:text-left z-20">
               <div className="w-14 h-14 rounded-full border-[2px] border-[#c59d5f] flex items-center justify-center bg-white overflow-hidden shadow-sm mx-auto md:mx-0">
-                <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Nisa Logo" className="w-full h-full object-contain p-1" />
+                <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Nisa Ul Huda Islamic Mobile Companion Logo" loading="lazy" decoding="async" className="w-full h-full object-contain p-1" />
               </div>
 
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold italic text-slate-900 leading-tight">
@@ -543,7 +579,9 @@ export const Home: React.FC = () => {
               <img
                 id="svg-wp-woman"
                 src={`${import.meta.env.BASE_URL}woman_cutout_banner.webp`}
-                alt="Muslim woman holding Nisa Ul Huda app"
+                alt="Muslim woman using Nisa Ul Huda Islamic Companion app"
+                loading="lazy"
+                decoding="async"
                 className="relative md:absolute bottom-0 md:right-0 w-auto h-full md:h-[520px] max-w-none object-contain object-bottom drop-shadow-2xl z-30 md:-mb-[205px]"
               />
             </div>

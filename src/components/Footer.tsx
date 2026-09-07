@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
           <div className="space-y-6">
             <Link to="/" className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-full border-2 border-[#c59d5f] flex items-center justify-center bg-white shadow-xl overflow-hidden">
-                <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Nisa Ul Huda Logo" className="w-full h-full object-contain p-0.5" />
+                <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Nisa Ul Huda - Islamic Mobile Companion Logo" width="56" height="56" loading="lazy" decoding="async" className="w-full h-full object-contain p-0.5" />
               </div>
               <div className="flex flex-col">
                 <span className="text-2xl font-bold text-white font-serif tracking-wider">
@@ -65,7 +65,7 @@ const Footer: React.FC = () => {
               <li><Link to="/contact" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Contact Us</Link></li>
               <li><Link to="/privacy-policy" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Privacy Policy</Link></li>
               <li><Link to="/terms" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Terms & Conditions</Link></li>
-              <li><Link to="/faq" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> FAQ</Link></li>
+              <li><Link to="/sitemap" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Sitemap</Link></li>
             </ul>
           </div>
 
@@ -111,7 +111,9 @@ const Footer: React.FC = () => {
       <div className="absolute bottom-0 left-0 w-full z-0 pointer-events-none flex justify-center overflow-visible translate-y-[80%] lg:translate-y-[13%]">
         <img
           src={`${import.meta.env.BASE_URL}minrates.svg`}
-          alt="Minarets Silhouette"
+          alt="Islamic Mosque Minarets Silhouette Skyline Background"
+          loading="lazy"
+          decoding="async"
           className="w-full h-auto object-bottom opacity-80"
           style={{ filter: 'drop-shadow(0px -5px 15px rgba(0,0,0,0.4))' }}
         />

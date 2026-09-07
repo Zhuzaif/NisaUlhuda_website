@@ -17,7 +17,9 @@ const PrivacyPolicy: React.FC = () => {
         <div className="absolute inset-0 z-0">
           <img 
             src={`${import.meta.env.BASE_URL}image for privacy and terms.webp`} 
-            alt="Mosque Interior" 
+            alt="Historic Islamic Mosque Architecture Interior - Privacy Policy" 
+            fetchPriority="high"
+            decoding="async"
             className="w-full h-full object-cover opacity-30 mix-blend-overlay"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/60 to-gray-900/95"></div>

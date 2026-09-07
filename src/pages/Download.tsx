@@ -2,9 +2,25 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Smartphone, QrCode, Star, Download as DownloadIcon } from 'lucide-react';
 
-const AppleIcon = ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 384 512" fill="currentColor" className={className} {...props}>
-    <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
+const AmazonIcon = ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
+    <path d="M15.93 17.09c-2.83 2.08-6.94 3.19-10.51 3.19-4.99 0-9.49-1.93-12.89-5.15-.27-.25-.03-.6.29-.41 3.67 2.13 8.16 3.41 12.83 3.41 3.16 0 6.69-.69 9.87-2.12.48-.22.89.34.41.68zm1.3-1.46c-.36-.46-2.38-.22-3.3-.11-.28.03-.32-.2-.07-.37 1.62-1.12 4.28-.8 4.59-.41.32.41-.09 3.11-1.63 4.35-.24.19-.46.09-.35-.16.36-.82 1.12-2.84.76-3.3zM13.25 3.5c-3.13 0-5.78 2.02-5.78 5.64 0 3.2 2.08 5.17 4.96 5.17 1.95 0 3.42-.92 4.23-2.19v1.94c0 .17.1.32.27.32h2.24c.17 0 .27-.15.27-.32V8.94c0-3.66-2.52-5.44-6.19-5.44zm.44 8.78c-1.69 0-3.03-1.25-3.03-3.35 0-2.07 1.34-3.32 3.03-3.32 1.67 0 2.95 1.25 2.95 3.32 0 2.1-1.28 3.35-2.95 3.35z"/>
+  </svg>
+);
+
+const UptodownIcon = ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
+    <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 3.1l6.5 3.6v7.6L12 19.9 5.5 16.3V8.7L12 5.1zm-1 3.9v5H8l4 4 4-4h-3V9h-2z"/>
+  </svg>
+);
+
+const HuaweiIcon = ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+    <path d="M3 6h18" />
+    <path d="M16 10a4 4 0 0 1-8 0" />
+    <path d="M12 14v4" />
+    <path d="m10 16 2-2 2 2" />
   </svg>
 );
 
@@ -217,50 +233,68 @@ const Download: React.FC = () => {
                Choose Your Platform
             </h2>
             <p className="text-slate-500 mb-10 max-w-lg mx-auto">
-               Nisa Ul Huda is available across all major app stores. Select your preferred platform below.
+               Nisa Ul Huda is available across major Android app stores. Select your preferred platform below.
             </p>
 
+            {/* Primary Featured Stores: Google Play & Amazon Appstore */}
             <div className="flex flex-col sm:flex-row gap-6 w-full justify-center mb-10">
-              <a href="#download-ios" className="flex items-center justify-center gap-4 bg-black hover:bg-slate-900 text-white px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto min-w-[240px]">
-                <AppleIcon className="w-9 h-9" />
-                <div className="flex flex-col items-start">
-                  <span className="text-xs text-slate-300">Download on the</span>
-                  <span className="text-xl font-semibold leading-none mt-1">App Store</span>
-                </div>
-              </a>
-              
-              <a href="#download-android" className="flex items-center justify-center gap-4 bg-[#c29b62] hover:bg-[#b08b53] text-white px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto min-w-[240px]">
+              <a 
+                href="https://play.google.com/store/apps/details?id=com.nisaulhuda.hudalabs" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center justify-center gap-4 bg-[#c29b62] hover:bg-[#b08b53] text-white px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto min-w-[250px]"
+              >
                 <PlayStoreIcon className="w-8 h-8" />
-                <div className="flex flex-col items-start">
+                <div className="flex flex-col items-start text-left">
                   <span className="text-xs text-white/90 uppercase tracking-wider">Get it on</span>
                   <span className="text-xl font-semibold leading-none mt-1">Google Play</span>
                 </div>
               </a>
+
+              <a 
+                href="https://www.amazon.com/gp/product/B0HHXF3P7C" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center justify-center gap-4 bg-[#111421] hover:bg-black text-white px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto min-w-[250px]"
+              >
+                <AmazonIcon className="w-8 h-8 text-[#ff9900]" />
+                <div className="flex flex-col items-start text-left">
+                  <span className="text-xs text-slate-300 uppercase tracking-wider">Available at</span>
+                  <span className="text-xl font-semibold leading-none mt-1">Amazon Appstore</span>
+                </div>
+              </a>
             </div>
 
-            {/* Other Platforms (From existing data) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl mx-auto border-t border-slate-100 pt-10">
-              <a href="#" className="flex items-center justify-center gap-3 bg-slate-50 hover:bg-slate-100 text-slate-700 py-3 rounded-xl transition-colors border border-slate-200">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                <div className="flex flex-col items-start">
-                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Available on</span>
-                  <span className="text-sm font-bold leading-none">Amazon</span>
+            {/* Other Stores & Mirrors (Uptodown & Huawei AppGallery) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl mx-auto border-t border-slate-100 pt-8">
+              {/* Uptodown Store */}
+              <a 
+                href="https://nisa-ul-huda-islam-for-women.en.uptodown.com/android" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center justify-center gap-3 bg-slate-50 hover:bg-slate-100 text-slate-700 py-3.5 px-4 rounded-xl transition-colors border border-slate-200 group"
+              >
+                <UptodownIcon className="w-6 h-6 text-[#002f6c] group-hover:scale-110 transition-transform" />
+                <div className="flex flex-col items-start text-left">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Download APK on</span>
+                  <span className="text-sm font-bold leading-none text-slate-800">Uptodown</span>
                 </div>
               </a>
-              <a href="#" className="flex items-center justify-center gap-3 bg-slate-50 hover:bg-slate-100 text-slate-700 py-3 rounded-xl transition-colors border border-slate-200">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.53L16 10l-2.41 1.47a2.7 2.7 0 0 1-3.18 0L8 10 5.59 11.47A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/></svg>
-                <div className="flex flex-col items-start">
-                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Explore on</span>
-                  <span className="text-sm font-bold leading-none">AppGallery</span>
+
+              {/* Huawei AppGallery (Under Review) */}
+              <div 
+                className="flex items-center justify-center gap-3 bg-slate-50/80 text-slate-600 py-3.5 px-4 rounded-xl border border-dashed border-slate-300 relative cursor-default"
+                title="Under Review by Huawei AppGallery — Link coming very soon!"
+              >
+                <HuaweiIcon className="w-6 h-6 text-[#cf0a2c]" />
+                <div className="flex flex-col items-start text-left">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Explore on</span>
+                    <span className="text-[9px] bg-amber-100 text-amber-800 font-semibold px-1.5 py-0.5 rounded">In Review</span>
+                  </div>
+                  <span className="text-sm font-bold leading-none text-slate-800">Huawei AppGallery</span>
                 </div>
-              </a>
-              <a href="#" className="flex items-center justify-center gap-3 bg-slate-50 hover:bg-slate-100 text-slate-700 py-3 rounded-xl transition-colors border border-slate-200">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-                <div className="flex flex-col items-start">
-                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Get it on</span>
-                  <span className="text-sm font-bold leading-none">Oppo Market</span>
-                </div>
-              </a>
+              </div>
             </div>
           </div>
         </div>
@@ -287,15 +321,15 @@ const Download: React.FC = () => {
             <ul className="space-y-4 text-slate-600 font-medium text-sm">
               <li className="flex items-center gap-3">
                 <span className="w-2 h-2 rounded-full bg-[#c29b62]"></span> 
-                iOS 15.0 or later (iPhone & iPad)
+                Android 8.0 and up (Phones & Tablets)
               </li>
               <li className="flex items-center gap-3">
                 <span className="w-2 h-2 rounded-full bg-[#c29b62]"></span> 
-                Android 9.0 and up
+                Optimized for Android 14 & 15
               </li>
               <li className="flex items-center gap-3">
                 <span className="w-2 h-2 rounded-full bg-[#c29b62]"></span> 
-                Minimum 500MB free storage recommended
+                Minimum 150MB free storage recommended
               </li>
             </ul>
           </motion.div>
@@ -309,7 +343,7 @@ const Download: React.FC = () => {
           >
             <div className="w-24 h-24 flex-shrink-0 relative group">
               <div className="w-full h-full bg-white border-2 border-[#c29b62]/30 p-1.5 rounded-xl shadow-sm">
-                <div className="w-full h-full bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://example.com/nisa&color=0f172a')] bg-cover bg-center rounded-lg" />
+                <div className="w-full h-full bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.nisaulhuda.hudalabs&color=0f172a')] bg-cover bg-center rounded-lg" />
               </div>
             </div>
             <div className="text-center sm:text-left">

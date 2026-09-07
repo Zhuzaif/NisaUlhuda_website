@@ -1,0 +1,6 @@
+# Robots.txt for Nisa Ul Huda
+User-agent: *
+Allow: /
+
+# XML Sitemap location
+Sitemap: https://nisa.hudalabs.app/sitemap.xml

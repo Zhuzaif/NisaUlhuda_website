@@ -53,7 +53,9 @@ const Contact: React.FC = () => {
         <div className="absolute inset-0 z-0">
           <img
             src={`${import.meta.env.BASE_URL}white_mosque_bg.webp`}
-            alt="Contact Us Background"
+            alt="White Mosque Architecture Background - Contact Nisa Ul Huda"
+            fetchPriority="high"
+            decoding="async"
             className="w-full h-full object-cover object-center opacity-40"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-900/60 to-slate-950" />
@@ -95,7 +97,7 @@ const Contact: React.FC = () => {
 
         {/* Decorative Lantern Hanging from the banner boundary */}
         <div className="absolute -top-1 right-4 lg:right-16 w-32 md:w-48 lg:w-56 z-40 pointer-events-none">
-          <img src={`${import.meta.env.BASE_URL}letern-for-contect.svg`} alt="Decorative Lantern" className="w-full h-auto object-contain drop-shadow-5xl" />
+          <img src={`${import.meta.env.BASE_URL}letern-for-contect.svg`} alt="Traditional Islamic Lantern Light - Nisa Ul Huda Contact" loading="lazy" decoding="async" className="w-full h-auto object-contain drop-shadow-5xl" />
         </div>
 
         {/* Header Section */}
@@ -220,7 +222,9 @@ const Contact: React.FC = () => {
               <div className="absolute inset-0 z-0 pointer-events-none">
                 <img
                   src={`${import.meta.env.BASE_URL}card-bg.webp`}
-                  alt="Card Background Pattern"
+                  alt="Islamic Geometric Arabesque Card Background Pattern"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover opacity-20 mix-blend-screen"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#061a14] via-[#061a14]/50 to-transparent" />

@@ -22,6 +22,14 @@ const routeMeta: Record<string, { title: string; description: string }> = {
     title: 'Terms & Conditions | Nisa Ul Huda',
     description: 'Understand the terms of service, guidelines, and user agreement for Nisa Ul Huda.'
   },
+  '/daily-ayat': {
+    title: 'Daily Quranic Ayat Posters & Quotes | Nisa Ul Huda',
+    description: 'Explore and download high-resolution daily Quranic Ayat calligraphy posters in Urdu and Arabic. 100% free for spiritual reflection and WhatsApp sharing.'
+  },
+  '/admin-portal': {
+    title: 'Admin Portal | Nisa Ul Huda CMS',
+    description: 'Private administration portal for Nisa Ul Huda website content.'
+  },
   '/sitemap': {
     title: 'Website Sitemap | Nisa Ul Huda',
     description: 'Complete directory of all pages, Islamic features, and legal policies on Nisa Ul Huda.'

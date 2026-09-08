@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Smartphone, CheckCircle2 } from 'lucide-react';
+import { Smartphone, CheckCircle2, Sparkles, Share2, Download as DownloadIcon, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ScrollingSVG from '../components/ScrollingSVG';
+import type { DailyAyat } from '../types/ayat';
+import { initialAyats } from '../data/defaultAyats';
+import { getAyats } from '../utils/ayatStorage';
 
 export const Home: React.FC = () => {
+  const [todayAyat, setTodayAyat] = useState<DailyAyat>(initialAyats[0]);
+
+  useEffect(() => {
+    getAyats().then(data => {
+      if (data && data.length > 0) {
+        setTodayAyat(data[0]);
+      }
+    });
+  }, []);
   // 5 Core Features with Custom Generated High-Res Photography inside Arch Cards
   const archFeatures = [
     { title: 'Ask Aalima', subtitle: 'Scholar Guidance', src: `${import.meta.env.BASE_URL}ask_aalima_photo.webp` },
@@ -528,6 +540,119 @@ export const Home: React.FC = () => {
         </section>
 
       </div>
+
+      {/* ========================================================================= */}
+      {/* 5. DAILY QURANIC AYAT & POSTERS SHOWCASE */}
+      {/* ========================================================================= */}
+      <section className="py-20 bg-[#f9f8f6] border-t border-slate-200/80 text-slate-800 relative">
+        <div className="container mx-auto max-w-6xl px-6 relative z-10">
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
+            
+            {/* Left Column: Ayat Info & Share Buttons */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: false, amount: 0.3 }}
+              transition={{ duration: 0.7 }}
+              className="lg:col-span-7 space-y-6 text-center lg:text-left"
+            >
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#c29b62]/15 text-[#c29b62] text-xs font-bold tracking-wider uppercase mx-auto lg:mx-0">
+                <Sparkles size={14} />
+                Ayat of the Day • Daily Poster
+              </div>
+
+              <div className="space-y-4">
+                <span className="text-xs text-[#c29b62] font-bold uppercase tracking-widest block">
+                  Surah {todayAyat.surahName} ({todayAyat.surahNumber}:{todayAyat.ayatNumber}) • {todayAyat.theme}
+                </span>
+
+                {/* Arabic Calligraphy Verse */}
+                <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-sm text-center lg:text-right">
+                  <p className="text-2xl sm:text-3xl font-serif text-slate-900 leading-loose" dir="rtl">
+                    {todayAyat.arabicText}
+                  </p>
+                </div>
+
+                {/* Urdu Translation */}
+                <p className="text-slate-700 text-sm sm:text-base leading-relaxed font-sans text-center lg:text-right" dir="rtl">
+                  "{todayAyat.urduTranslation}"
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-4">
+                <a
+                  href={`${import.meta.env.BASE_URL}${todayAyat.imageUrl.replace(/^\//, '')}`}
+                  download={`NisaUlHuda-${todayAyat.id}.jpg`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#c29b62] hover:bg-[#b08b53] text-white font-bold py-3.5 px-6 rounded-xl uppercase text-xs tracking-widest inline-flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+                >
+                  <DownloadIcon size={16} />
+                  Download HD Poster
+                </a>
+
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                    `✨ *Daily Quranic Ayat* ✨\n\n📖 *Surah ${todayAyat.surahName} [${todayAyat.ayatNumber}]*\n\n${todayAyat.arabicText}\n\n"${todayAyat.urduTranslation}"\n\n📥 Download high-resolution poster:\nhttps://nisa.hudalabs.app${todayAyat.imageUrl}`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#25D366] hover:bg-[#20ba59] text-white font-bold py-3.5 px-5 rounded-xl uppercase text-xs tracking-widest inline-flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+                >
+                  <Share2 size={16} />
+                  WhatsApp Status
+                </a>
+
+                <Link
+                  to="/daily-ayat"
+                  className="text-slate-800 hover:text-[#c29b62] text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors py-3.5"
+                >
+                  <span>Explore All Posters</span>
+                  <ArrowRight size={15} className="text-[#c29b62]" />
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Right Column: High-Res Poster Showcase */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: false, amount: 0.3 }}
+              transition={{ duration: 0.7 }}
+              className="lg:col-span-5 flex justify-center"
+            >
+              <Link
+                to="/daily-ayat"
+                className="group relative block max-w-[280px] sm:max-w-[310px] rounded-3xl overflow-hidden shadow-2xl border-2 border-[#c29b62]/40 hover:border-[#c29b62] transition-all duration-500 hover:scale-[1.02] bg-white p-2"
+              >
+                <div className="rounded-2xl overflow-hidden relative">
+                  <img
+                    src={`${import.meta.env.BASE_URL}${todayAyat.imageUrl.replace(/^\//, '')}`}
+                    alt={todayAyat.altText}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  
+                  {/* Badge Overlay */}
+                  <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold text-white border border-white/20 shadow">
+                    Today's Poster
+                  </div>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                    <span className="text-white text-xs font-bold flex items-center gap-1.5">
+                      <span>View in Daily Ayat Gallery</span>
+                      <ArrowRight size={14} className="text-[#c29b62]" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
 
 
       {/* ========================================================================= */}

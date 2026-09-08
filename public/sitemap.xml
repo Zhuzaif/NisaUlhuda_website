@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
@@ -7,15 +8,38 @@
   <!-- Home Page -->
   <url>
     <loc>https://nisa.hudalabs.app/</loc>
-    <lastmod>2026-09-07</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
+  </url>
+
+  <!-- Daily Quranic Ayat Posters & Quotes (Google Images Indexed) -->
+  <url>
+    <loc>https://nisa.hudalabs.app/daily-ayat</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.95</priority>
+    <image:image>
+      <image:loc>https://nisa.hudalabs.app/posters/ayat-sabr-baqarah.jpg</image:loc>
+      <image:title>Surah Al-Baqarah Ayat 45 Quranic Verse Poster on Sabr and Prayer</image:title>
+      <image:caption>Islamic Calligraphy Poster with Arabic and Urdu Translation for Daily Spiritual Reminder</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://nisa.hudalabs.app/posters/ayat-ease-sharh.jpg</image:loc>
+      <image:title>Surah Ash-Sharh Ayat 5-6 Poster - Indeed With Hardship Comes Ease</image:title>
+      <image:caption>Authentic Quranic calligraphy poster in Urdu and Arabic</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://nisa.hudalabs.app/posters/ayat-rahman-favors.jpg</image:loc>
+      <image:title>Surah Ar-Rahman Ayat 13 Golden Arabic Calligraphy Wall Art Poster</image:title>
+      <image:caption>Which of the favors of your Lord will you deny Quran poster</image:caption>
+    </image:image>
   </url>
 
   <!-- Download App Page -->
   <url>
     <loc>https://nisa.hudalabs.app/download</loc>
-    <lastmod>2026-09-07</lastmod>
+    <lastmod>2026-09-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>

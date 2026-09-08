@@ -51,6 +51,7 @@ const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-3 font-sans">
               <li><Link to="/" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Home</Link></li>
+              <li><Link to="/daily-ayat" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Ayat of the Day (Posters)</Link></li>
               <li><Link to="/download" className="text-slate-400 hover:text-[#c59d5f] transition-colors text-sm flex items-center gap-2"><span className="text-[#c59d5f]/50">›</span> Download</Link></li>
             </ul>
           </div>

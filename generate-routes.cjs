@@ -33,6 +33,11 @@ const routes = [
     description: 'Get in touch with the Nisa Ul Huda team for technical assistance, app feedback, or Islamic inquiries.'
   },
   {
+    path: 'daily-ayat',
+    title: 'Daily Quranic Ayat Posters & Quotes | Nisa Ul Huda',
+    description: 'Explore and download high-resolution daily Quranic Ayat calligraphy posters in Urdu and Arabic. 100% free for spiritual reflection and WhatsApp sharing.'
+  },
+  {
     path: 'sitemap',
     title: 'Website Sitemap | Nisa Ul Huda',
     description: 'Complete directory of all pages, Islamic features, and legal policies on Nisa Ul Huda.'

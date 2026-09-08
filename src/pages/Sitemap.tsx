@@ -50,6 +50,14 @@ const sitemapData: SitemapItem[] = [
     badge: 'Popular'
   },
   {
+    title: 'Daily Ayat Posters',
+    url: '/daily-ayat',
+    description: 'High-resolution Quranic verse posters with Urdu translations, calligraphy wallpapers, and daily reflections.',
+    icon: BookOpen,
+    category: 'Main Pages',
+    badge: 'New'
+  },
+  {
     title: 'Contact Us',
     url: '/contact',
     description: 'Direct communication for technical support, inquiries, and app suggestions.',

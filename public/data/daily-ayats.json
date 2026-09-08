@@ -1,5 +1,24 @@
 [
   {
+    "id": "surah-az-zumar-53",
+    "date": "2026-09-08",
+    "surahName": "Az-Zumar",
+    "surahNumber": 39,
+    "ayatNumber": "53",
+    "arabicText": "قُلْ يَا عِبَادِيَ الَّذِينَ أَسْرَفُوا عَلَىٰ أَنفُسِهِمْ لَا تَقْنَطُوا مِن رَّحْمَةِ اللَّهِ",
+    "urduTranslation": "(اے پیغمبر میری طرف سے) کہہ دو کہ اے میرے بندو جنہوں نے اپنی جانوں پر زیادتی کی ہے اللہ کی رحمت سے نا امید نہ ہونا۔",
+    "englishTranslation": "Say, 'O My servants who have transgressed against themselves [by sinning], do not despair of the mercy of Allah.",
+    "imageUrl": "/posters/surah-az-zumar-53.png",
+    "altText": "Surah Az-Zumar Ayat 53 Islamic Calligraphy Poster on Sabr & Hope with Urdu Translation",
+    "theme": "Sabr & Hope",
+    "tags": [
+      "daily ayat",
+      "quran quotes",
+      "islamic poster",
+      "nisa ul huda"
+    ]
+  },
+  {
     "id": "surah-al-baqarah-45",
     "date": "2026-09-08",
     "surahName": "Al-Baqarah",
@@ -11,7 +30,15 @@
     "imageUrl": "/posters/ayat-sabr-baqarah.jpg",
     "altText": "Surah Al-Baqarah Ayat 45 Quranic Verse Poster on Sabr and Prayer in Arabic & Urdu",
     "theme": "Sabr & Hope",
-    "tags": ["daily ayat", "surah baqarah", "sabr", "prayer", "urdu quran poster", "islamic quotes", "nisa ul huda"]
+    "tags": [
+      "daily ayat",
+      "surah baqarah",
+      "sabr",
+      "prayer",
+      "urdu quran poster",
+      "islamic quotes",
+      "nisa ul huda"
+    ]
   },
   {
     "id": "surah-ash-sharh-5-6",
@@ -25,7 +52,14 @@
     "imageUrl": "/posters/ayat-ease-sharh.jpg",
     "altText": "Surah Ash-Sharh Ayat 5-6 Islamic Calligraphy Poster - Indeed With Hardship Comes Ease",
     "theme": "Peace & Healing",
-    "tags": ["daily ayat", "surah sharh", "with hardship comes ease", "islamic wallpaper", "quranic poster", "nisa ul huda"]
+    "tags": [
+      "daily ayat",
+      "surah sharh",
+      "with hardship comes ease",
+      "islamic wallpaper",
+      "quranic poster",
+      "nisa ul huda"
+    ]
   },
   {
     "id": "surah-ar-rahman-13",
@@ -39,6 +73,13 @@
     "imageUrl": "/posters/ayat-rahman-favors.jpg",
     "altText": "Surah Ar-Rahman Ayat 13 Golden Arabic Calligraphy Wall Art Poster",
     "theme": "Gratitude (Shukr)",
-    "tags": ["daily ayat", "surah rahman", "which of the favors of your lord", "shukr poster", "islamic calligraphy", "nisa ul huda"]
+    "tags": [
+      "daily ayat",
+      "surah rahman",
+      "which of the favors of your lord",
+      "shukr poster",
+      "islamic calligraphy",
+      "nisa ul huda"
+    ]
   }
 ]

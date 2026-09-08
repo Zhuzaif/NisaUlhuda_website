@@ -20,31 +20,24 @@ import {
   Plus, 
   X,
   Mail,
-  UserCheck
+  QrCode
 } from 'lucide-react';
 import type { DailyAyat } from '../types/ayat';
 import { getAyats, saveLocalAyat, getStoredGitHubToken, setStoredGitHubToken, publishToGitHub } from '../utils/ayatStorage';
 import { initialAyats } from '../data/defaultAyats';
 import { generateQRMatrix, getQRPath } from '../utils/qrCode';
-import { getOtpAuthUri, generateBackupCodes } from '../utils/totp';
+import { getOtpAuthUri } from '../utils/totp';
 import { 
-  isAdminInitialized,
-  registerAdminAccount,
-  verifyAdminCredentials,
   getAuthorizedAdminEmail,
-  setMasterPassword,
-  updateAdminEmail,
-  getOrCreate2FASecret, 
-  confirm2FASetup, 
+  verifyAdminCredentials,
+  getActiveTOTPSecret,
   verifyTOTPWithReplayProtection, 
   verifyAndConsumeBackupCode, 
-  saveBackupCodes, 
   getRemainingBackupCodesCount, 
   checkRateLimit, 
   createAdminSession, 
   validateAdminSession, 
-  logoutAdmin,
-  reset2FASettings
+  logoutAdmin
 } from '../utils/adminAuth';
 
 const DEFAULT_THEMES = [
@@ -61,7 +54,7 @@ const AdminPortal: React.FC = () => {
   // Authentication & 2FA State
   // -------------------------------------------------------------
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authStep, setAuthStep] = useState<'login' | 'setup-account' | '2fa-verify' | '2fa-setup' | '2fa-backup-codes'>('login');
+  const [authStep, setAuthStep] = useState<'login' | '2fa-verify'>('login');
   
   // Login Form State
   const [emailInput, setEmailInput] = useState('');
@@ -69,29 +62,18 @@ const AdminPortal: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Setup Form State (One-Time Owner Registration)
-  const [setupEmail, setSetupEmail] = useState('');
-  const [setupPassword, setSetupPassword] = useState('');
-  const [setupConfirmPassword, setSetupConfirmPassword] = useState('');
-  const [setupError, setSetupError] = useState('');
-
   // 2FA Verification State
   const [totpInput, setTotpInput] = useState('');
   const [totpError, setTotpError] = useState('');
   const [isUsingBackupCode, setIsUsingBackupCode] = useState(false);
-  const [totpSecret, setTotpSecret] = useState('');
-  const [newBackupCodes, setNewBackupCodes] = useState<string[]>([]);
-  const [copiedKey, setCopiedKey] = useState(false);
-  const [copiedCodes, setCopiedCodes] = useState(false);
+  const [activeSecret, setActiveSecret] = useState<string>('');
   const [rateLimitSeconds, setRateLimitSeconds] = useState(0);
 
-  // Security Settings Modal in Dashboard
+  // Security Modal in Dashboard
   const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [remainingBackupCount, setRemainingBackupCount] = useState(0);
-  const [changeEmailInput, setChangeEmailInput] = useState('');
-  const [newPasswordInput, setNewPasswordInput] = useState('');
-  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
-  const [securityStatusMsg, setSecurityStatusMsg] = useState<{ success?: boolean; text: string } | null>(null);
+  const [copiedKey, setCopiedKey] = useState(false);
 
   // GitHub Settings State
   const [ghToken, setGhToken] = useState('');
@@ -135,24 +117,19 @@ const AdminPortal: React.FC = () => {
       setRateLimitSeconds(rl.remainingSeconds);
     }
 
-    // 2. Check if admin account initialized
-    const initialized = isAdminInitialized();
-    if (!initialized) {
-      setAuthStep('setup-account');
-    } else {
-      setAuthStep('login');
-    }
-
-    // 3. Cryptographically validate session token against 2FA secret
+    // 2. Cryptographically validate session token
     validateAdminSession().then(valid => {
       if (valid) {
         setIsAuthenticated(true);
+        const sec = getActiveTOTPSecret();
+        if (sec) setActiveSecret(sec);
       } else {
         setIsAuthenticated(false);
+        setAuthStep('login');
       }
     });
 
-    // 4. Load custom categories
+    // 3. Load custom categories
     try {
       const saved = localStorage.getItem('nisa_custom_categories');
       if (saved) {
@@ -199,17 +176,16 @@ const AdminPortal: React.FC = () => {
     return Array.from(set);
   }, [storedCustomCategories, existingAyats]);
 
-  // QR Code generation for 2FA Setup
+  // QR Code generation for Google Authenticator (only when authenticated or viewing)
   const qrMatrix = useMemo(() => {
-    if (!totpSecret) return null;
-    const activeEmail = getAuthorizedAdminEmail() || setupEmail || 'admin@nisaulhuda.app';
-    const uri = getOtpAuthUri(totpSecret, activeEmail, 'Nisa Ul Huda');
+    if (!activeSecret) return null;
+    const uri = getOtpAuthUri(activeSecret, getAuthorizedAdminEmail(), 'Nisa Ul Huda');
     try {
       return generateQRMatrix(uri);
     } catch {
       return null;
     }
-  }, [totpSecret, setupEmail]);
+  }, [activeSecret]);
 
   const qrPath = useMemo(() => {
     if (!qrMatrix) return '';
@@ -220,37 +196,7 @@ const AdminPortal: React.FC = () => {
   // Authentication Handlers
   // -------------------------------------------------------------
 
-  // One-time Setup Form Submit (Sets Authorized Email & Password)
-  const handleSetupAccountSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSetupError('');
-
-    const cleanEmail = setupEmail.toLowerCase().trim();
-    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setSetupError('Please enter a valid Gmail / email address.');
-      return;
-    }
-
-    if (setupPassword.length < 6) {
-      setSetupError('Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (setupPassword !== setupConfirmPassword) {
-      setSetupError('Passwords do not match.');
-      return;
-    }
-
-    // Register email and password hash
-    await registerAdminAccount(cleanEmail, setupPassword);
-
-    // Generate 2FA Secret for Google Authenticator
-    const secret = getOrCreate2FASecret();
-    setTotpSecret(secret);
-    setAuthStep('2fa-setup');
-  };
-
-  // Standard Login Submit (Verifies Registered Email + Password)
+  // Standard Login Submit (Strictly matches huzaifasura970@gmail.com and password)
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -263,46 +209,22 @@ const AdminPortal: React.FC = () => {
     }
 
     const credResult = await verifyAdminCredentials(emailInput, passwordInput);
-    if (!credResult.success) {
+    if (!credResult.success || !credResult.secret) {
       const updatedRl = checkRateLimit();
       if (updatedRl.isLocked) {
         setRateLimitSeconds(updatedRl.remainingSeconds);
         setLoginError(`Locked for ${updatedRl.remainingSeconds}s due to repeated failures.`);
       } else {
-        setLoginError(credResult.error || 'Invalid authorized email or password.');
+        setLoginError(credResult.error || 'Access Denied: Invalid credentials.');
       }
       return;
     }
 
-    // Email and Password are valid! Now proceed to Google Authenticator
+    // Credentials verified! Proceed to 2FA verification
+    setActiveSecret(credResult.secret);
     setAuthStep('2fa-verify');
     setTotpInput('');
     setTotpError('');
-  };
-
-  // Confirm Google Authenticator Setup
-  const handle2FAConfirmSetup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setTotpError('');
-
-    const verifyResult = await verifyTOTPWithReplayProtection(totpInput, totpSecret);
-    if (!verifyResult.success) {
-      setTotpError(verifyResult.error || 'Invalid 6-digit code. Check your Google Authenticator.');
-      return;
-    }
-
-    // Valid code! Confirm 2FA and generate emergency backup codes
-    confirm2FASetup(totpSecret);
-    const backupCodes = generateBackupCodes(8);
-    await saveBackupCodes(backupCodes);
-    setNewBackupCodes(backupCodes);
-    setAuthStep('2fa-backup-codes');
-  };
-
-  const handleFinishSetupAndLogin = async () => {
-    await createAdminSession(totpSecret);
-    setIsAuthenticated(true);
-    setRemainingBackupCount(8);
   };
 
   // Verify Google Authenticator Code during Login
@@ -314,21 +236,19 @@ const AdminPortal: React.FC = () => {
       // Verify single-use emergency backup code
       const valid = await verifyAndConsumeBackupCode(totpInput);
       if (valid) {
-        const secret = getOrCreate2FASecret();
-        await createAdminSession(secret);
+        await createAdminSession(activeSecret);
         setIsAuthenticated(true);
         setRemainingBackupCount(getRemainingBackupCodesCount());
       } else {
-        setTotpError('Invalid or already used backup code.');
+        setTotpError('Invalid or already used emergency backup code.');
       }
       return;
     }
 
     // Verify Google Authenticator 6-digit TOTP
-    const secret = getOrCreate2FASecret();
-    const result = await verifyTOTPWithReplayProtection(totpInput, secret);
+    const result = await verifyTOTPWithReplayProtection(totpInput, activeSecret);
     if (result.success) {
-      await createAdminSession(secret);
+      await createAdminSession(activeSecret);
       setIsAuthenticated(true);
     } else {
       setTotpError(result.error || 'Incorrect 6-digit code. Check your Google Authenticator app.');
@@ -341,53 +261,7 @@ const AdminPortal: React.FC = () => {
     setAuthStep('login');
     setPasswordInput('');
     setTotpInput('');
-  };
-
-  // -------------------------------------------------------------
-  // Security Modal Operations
-  // -------------------------------------------------------------
-  const handleRegenerateBackupCodes = async () => {
-    const codes = generateBackupCodes(8);
-    await saveBackupCodes(codes);
-    setNewBackupCodes(codes);
-    setRemainingBackupCount(8);
-    setSecurityStatusMsg({ success: true, text: '8 new backup recovery codes generated and saved!' });
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPasswordInput || newPasswordInput.length < 6) {
-      setSecurityStatusMsg({ success: false, text: 'New password must be at least 6 characters long.' });
-      return;
-    }
-    if (newPasswordInput !== confirmPasswordInput) {
-      setSecurityStatusMsg({ success: false, text: 'New password and Confirm password do not match.' });
-      return;
-    }
-    await setMasterPassword(newPasswordInput);
-    setNewPasswordInput('');
-    setConfirmPasswordInput('');
-    setSecurityStatusMsg({ success: true, text: 'Master Password successfully updated!' });
-  };
-
-  const handleChangeEmail = (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = changeEmailInput.toLowerCase().trim();
-    if (!clean || !clean.includes('@')) {
-      setSecurityStatusMsg({ success: false, text: 'Please enter a valid email address.' });
-      return;
-    }
-    updateAdminEmail(clean);
-    setChangeEmailInput('');
-    setSecurityStatusMsg({ success: true, text: `Authorized Admin Email updated to: ${clean}` });
-  };
-
-  const handleReset2FA = () => {
-    if (window.confirm('Are you sure you want to reset Admin Credentials and 2FA? You will need to re-initialize your account.')) {
-      reset2FASettings();
-      setShowSecurityModal(false);
-      setAuthStep('setup-account');
-    }
+    setActiveSecret('');
   };
 
   // -------------------------------------------------------------
@@ -522,25 +396,8 @@ const AdminPortal: React.FC = () => {
     downloadAnchor.remove();
   };
 
-  const handleCopyCodes = (codes: string[]) => {
-    navigator.clipboard.writeText(codes.join('\n'));
-    setCopiedCodes(true);
-    setTimeout(() => setCopiedCodes(false), 2500);
-  };
-
-  const handleDownloadCodes = (codes: string[]) => {
-    const text = `Nisa Ul Huda Admin Emergency Backup Codes\nGenerated on: ${new Date().toLocaleString()}\nAuthorized Email: ${getAuthorizedAdminEmail()}\n\nKeep these single-use codes in a safe place:\n\n${codes.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\nEach code can be used only once if you lose access to Google Authenticator.`;
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'nisa-ul-huda-backup-codes.txt';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   // -------------------------------------------------------------
-  // Render: Login, One-Time Setup & 2FA Views
+  // Render: Secure Login & 2FA Verification
   // -------------------------------------------------------------
   if (!isAuthenticated) {
     return (
@@ -559,101 +416,7 @@ const AdminPortal: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="relative z-10 w-full max-w-lg bg-white rounded-3xl p-8 sm:p-10 shadow-2xl text-center space-y-6 border border-slate-100"
         >
-          {/* VIEW 1: ONE-TIME OWNER SETUP (If portal is not yet initialized with Gmail) */}
-          {authStep === 'setup-account' && (
-            <div className="space-y-6 text-left">
-              <div className="text-center space-y-2">
-                <div className="w-16 h-16 rounded-2xl bg-[#c29b62]/15 border border-[#c29b62]/30 text-[#c29b62] flex items-center justify-center mx-auto shadow-inner">
-                  <UserCheck size={30} />
-                </div>
-                <span className="text-[10px] text-[#c29b62] font-bold uppercase tracking-widest block">
-                  First-Time Owner Registration
-                </span>
-                <h1 className="text-2xl font-serif font-bold text-slate-900">
-                  Bind Your Admin Account
-                </h1>
-                <p className="text-slate-500 text-xs">
-                  Register your authorized Gmail and master password. No other email will ever be able to access this portal.
-                </p>
-              </div>
-
-              <form onSubmit={handleSetupAccountSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                    <Mail size={13} className="text-[#c29b62]" />
-                    Your Authorized Gmail Address *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={setupEmail}
-                    onChange={e => setSetupEmail(e.target.value)}
-                    placeholder="e.g. yourname@gmail.com"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white transition-all font-medium"
-                    autoFocus
-                  />
-                  <span className="text-[10px] text-slate-400 block mt-1">
-                    Only this specific email will be authorized to login.
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                    <Lock size={13} className="text-[#c29b62]" />
-                    Choose Master Password *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={setupPassword}
-                      onChange={e => setSetupPassword(e.target.value)}
-                      placeholder="Minimum 6 characters"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 pr-11 text-sm text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Confirm Master Password *
-                  </label>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={setupConfirmPassword}
-                    onChange={e => setSetupConfirmPassword(e.target.value)}
-                    placeholder="Re-enter your password"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white transition-all"
-                  />
-                </div>
-
-                {setupError && (
-                  <p className="text-rose-600 text-xs flex items-center gap-1 font-medium bg-rose-50 p-2.5 rounded-xl border border-rose-100">
-                    <AlertCircle size={14} />
-                    {setupError}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full bg-[#c29b62] hover:bg-[#b08b53] text-white font-bold py-3.5 rounded-2xl text-xs uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <ShieldCheck size={16} />
-                  Proceed to Google Authenticator Link
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* VIEW 2: STANDARD LOGIN (Email + Password Check) */}
+          {/* STAGE 1: CREDENTIALS LOGIN (Email + Password) */}
           {authStep === 'login' && (
             <div className="space-y-6 text-left">
               <div className="text-center space-y-2">
@@ -668,7 +431,7 @@ const AdminPortal: React.FC = () => {
                   Nisa Ul Huda CMS
                 </h1>
                 <p className="text-slate-500 text-xs">
-                  Sign in with your authorized admin email and password.
+                  Sign in with the authorized admin email and password.
                 </p>
               </div>
 
@@ -693,7 +456,7 @@ const AdminPortal: React.FC = () => {
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                     <Lock size={13} className="text-[#c29b62]" />
-                    Password
+                    Master Password
                   </label>
                   <div className="relative">
                     <input
@@ -741,13 +504,13 @@ const AdminPortal: React.FC = () => {
               <div className="pt-2 border-t border-slate-100 text-center">
                 <span className="text-[11px] text-slate-400 font-light flex items-center justify-center gap-1.5">
                   <ShieldCheck size={13} className="text-emerald-600" />
-                  Protected by Email Authorization + Google Authenticator
+                  Protected by Hardcoded Email Whitelist + Google Authenticator
                 </span>
               </div>
             </div>
           )}
 
-          {/* VIEW 3: 2FA VERIFICATION (TOTP Code from Google Authenticator) */}
+          {/* STAGE 2: 2FA VERIFICATION (TOTP Code or Emergency Backup Code) */}
           {authStep === '2fa-verify' && (
             <div className="space-y-6">
               <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
@@ -763,7 +526,7 @@ const AdminPortal: React.FC = () => {
                 </h2>
                 <p className="text-slate-500 text-xs">
                   {isUsingBackupCode
-                    ? 'Enter one of your 8-digit emergency recovery codes (e.g. 4829-1940).'
+                    ? 'Enter one of your 8-digit emergency backup codes (e.g. 7TGB-KC4U).'
                     : `Enter the 6-digit code shown for Nisa Ul Huda (${getAuthorizedAdminEmail()}).`}
                 </p>
               </div>
@@ -821,161 +584,13 @@ const AdminPortal: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* VIEW 4: 2FA SETUP (QR Code for Google Authenticator) */}
-          {authStep === '2fa-setup' && (
-            <div className="space-y-5 text-left">
-              <div className="text-center space-y-1">
-                <div className="w-12 h-12 rounded-2xl bg-[#c29b62]/15 border border-[#c29b62]/30 text-[#c29b62] flex items-center justify-center mx-auto mb-2">
-                  <Smartphone size={24} />
-                </div>
-                <h2 className="text-xl font-serif font-bold text-slate-900">
-                  Scan in Google Authenticator
-                </h2>
-                <p className="text-slate-500 text-xs">
-                  Scan this QR code in Google Authenticator. It will be labeled as:
-                  <strong className="block text-slate-800 font-mono mt-0.5">
-                    Nisa Ul Huda ({setupEmail || getAuthorizedAdminEmail()})
-                  </strong>
-                </p>
-              </div>
-
-              {/* QR Code SVG Display */}
-              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-4 flex flex-col items-center justify-center">
-                {qrMatrix ? (
-                  <svg
-                    viewBox={`0 0 ${qrMatrix.length + 8} ${qrMatrix.length + 8}`}
-                    className="w-44 h-44 sm:w-48 sm:h-48 bg-white p-2 rounded-2xl shadow-sm border border-slate-200"
-                    shapeRendering="crispEdges"
-                  >
-                    <path d={qrPath} fill="#0f172a" />
-                  </svg>
-                ) : (
-                  <div className="w-44 h-44 flex items-center justify-center text-slate-400 text-xs">
-                    Generating QR Code...
-                  </div>
-                )}
-                <span className="text-[10px] text-slate-400 mt-2">
-                  Scan using Google Authenticator, Microsoft Authenticator, or Authy
-                </span>
-              </div>
-
-              {/* Manual Secret Key */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
-                  Or enter setup key manually in Authenticator:
-                </label>
-                <div className="flex items-center justify-between bg-slate-100 rounded-xl p-2.5 border border-slate-200">
-                  <code className="text-xs font-mono font-bold text-slate-800 tracking-wider">
-                    {totpSecret.match(/.{1,4}/g)?.join(' ') || totpSecret}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(totpSecret);
-                      setCopiedKey(true);
-                      setTimeout(() => setCopiedKey(false), 2000);
-                    }}
-                    className="text-xs font-semibold text-[#c29b62] hover:text-[#b08b53] flex items-center gap-1 ml-2"
-                  >
-                    {copiedKey ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-                    {copiedKey ? 'Copied' : 'Copy'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm 6-Digit Code */}
-              <form onSubmit={handle2FAConfirmSetup} className="space-y-3 pt-2">
-                <label className="text-xs font-bold text-slate-700 block">
-                  Enter the 6-digit code shown in Authenticator to activate:
-                </label>
-                <input
-                  type="text"
-                  value={totpInput}
-                  onChange={e => setTotpInput(e.target.value)}
-                  placeholder="000 000"
-                  maxLength={6}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-center text-xl tracking-[0.25em] text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white font-mono font-bold"
-                  autoFocus
-                />
-
-                {totpError && (
-                  <p className="text-rose-600 text-xs flex items-center gap-1 font-medium bg-rose-50 p-2 rounded-xl border border-rose-100">
-                    <AlertCircle size={14} />
-                    {totpError}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full bg-[#c29b62] hover:bg-[#b08b53] text-white font-bold py-3.5 rounded-2xl text-xs uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <ShieldCheck size={16} />
-                  Confirm & Activate 2FA
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* VIEW 5: EMERGENCY BACKUP CODES (Shown After Setup) */}
-          {authStep === '2fa-backup-codes' && (
-            <div className="space-y-5 text-left">
-              <div className="text-center space-y-1">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto mb-2">
-                  <ShieldCheck size={24} />
-                </div>
-                <h2 className="text-xl font-serif font-bold text-slate-900">
-                  Save Your Emergency Backup Codes
-                </h2>
-                <p className="text-slate-500 text-xs">
-                  If you ever lose your phone or Google Authenticator, these 8 single-use codes are your ONLY way to regain access.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                {newBackupCodes.map((code, idx) => (
-                  <div key={idx} className="bg-white px-3 py-2 rounded-xl border border-slate-200 text-center font-mono font-bold text-xs text-slate-800 shadow-sm">
-                    {code}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleCopyCodes(newBackupCodes)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-                >
-                  {copiedCodes ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-                  {copiedCodes ? 'Copied to Clipboard' : 'Copy All Codes'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleDownloadCodes(newBackupCodes)}
-                  className="flex-1 py-2.5 rounded-xl border border-[#c29b62]/40 bg-[#c29b62]/10 hover:bg-[#c29b62]/20 text-[#c29b62] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <Download size={14} />
-                  Download TXT
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleFinishSetupAndLogin}
-                className="w-full bg-[#c29b62] hover:bg-[#b08b53] text-white font-bold py-3.5 rounded-2xl text-xs uppercase tracking-widest shadow-lg transition-all text-center block"
-              >
-                I Have Saved My Codes → Go to Dashboard
-              </button>
-            </div>
-          )}
         </motion.div>
       </div>
     );
   }
 
   // -------------------------------------------------------------
-  // Render: Admin Dashboard (Secure & Authenticated)
+  // Render: Admin Dashboard (Authenticated)
   // -------------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-24 selection:bg-[#c29b62]/30 selection:text-slate-900">
@@ -998,15 +613,21 @@ const AdminPortal: React.FC = () => {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <button
-              onClick={() => {
-                setShowSecurityModal(true);
-                setSecurityStatusMsg(null);
-              }}
+              onClick={() => setShowQrModal(true)}
+              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 flex items-center gap-1.5 transition-colors border border-slate-200"
+              title="Show Google Authenticator QR Code"
+            >
+              <QrCode size={14} className="text-[#c29b62]" />
+              <span className="hidden sm:inline">2FA QR Code</span>
+            </button>
+
+            <button
+              onClick={() => setShowSecurityModal(true)}
               className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-xs font-semibold text-emerald-800 flex items-center gap-1.5 transition-colors border border-emerald-200"
-              title="Manage 2FA Security"
+              title="Security Status"
             >
               <ShieldCheck size={14} className="text-emerald-600" />
-              <span className="hidden sm:inline">2FA & Account</span>
+              <span className="hidden sm:inline">Security</span>
             </button>
 
             <button
@@ -1028,7 +649,91 @@ const AdminPortal: React.FC = () => {
         </div>
       </header>
 
-      {/* Security & 2FA Modal */}
+      {/* View QR Code Modal */}
+      <AnimatePresence>
+        {showQrModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowQrModal(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full z-10 shadow-2xl space-y-5 border border-slate-100 text-center"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2 text-slate-900 font-serif font-bold text-base">
+                  <Smartphone className="text-[#c29b62]" size={18} />
+                  Google Authenticator QR Code
+                </div>
+                <button
+                  onClick={() => setShowQrModal(false)}
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center">
+                {qrMatrix ? (
+                  <svg
+                    viewBox={`0 0 ${qrMatrix.length + 8} ${qrMatrix.length + 8}`}
+                    className="w-48 h-48 bg-white p-2 rounded-2xl shadow-sm border border-slate-200"
+                    shapeRendering="crispEdges"
+                  >
+                    <path d={qrPath} fill="#0f172a" />
+                  </svg>
+                ) : (
+                  <div className="w-48 h-48 flex items-center justify-center text-slate-400 text-xs">
+                    Loading QR Code...
+                  </div>
+                )}
+                <span className="text-[11px] text-slate-500 mt-2 font-mono font-medium">
+                  {getAuthorizedAdminEmail()}
+                </span>
+              </div>
+
+              <div className="space-y-1.5 text-left">
+                <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
+                  Manual Entry Key:
+                </label>
+                <div className="flex items-center justify-between bg-slate-100 rounded-xl p-2.5 border border-slate-200">
+                  <code className="text-xs font-mono font-bold text-slate-800 tracking-wider">
+                    {activeSecret.match(/.{1,4}/g)?.join(' ') || activeSecret}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(activeSecret);
+                      setCopiedKey(true);
+                      setTimeout(() => setCopiedKey(false), 2000);
+                    }}
+                    className="text-xs font-semibold text-[#c29b62] hover:text-[#b08b53] flex items-center gap-1 ml-2"
+                  >
+                    {copiedKey ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                    {copiedKey ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold"
+              >
+                Close
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Security Status Modal */}
       <AnimatePresence>
         {showSecurityModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1043,12 +748,12 @@ const AdminPortal: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full z-10 shadow-2xl space-y-6 border border-slate-100 max-h-[90vh] overflow-y-auto"
+              className="relative bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full z-10 shadow-2xl space-y-6 border border-slate-100"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2 text-slate-900 font-serif font-bold text-lg">
                   <ShieldCheck className="text-emerald-600" size={20} />
-                  Security & Account Management
+                  Security Lock Status
                 </div>
                 <button
                   onClick={() => setShowSecurityModal(false)}
@@ -1058,51 +763,18 @@ const AdminPortal: React.FC = () => {
                 </button>
               </div>
 
-              {securityStatusMsg && (
-                <div className={`p-3 rounded-2xl text-xs font-medium flex items-center gap-2 ${
-                  securityStatusMsg.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
-                }`}>
-                  {securityStatusMsg.success ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
-                  {securityStatusMsg.text}
-                </div>
-              )}
-
-              {/* Authorized Email Display & Change */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-                <div>
-                  <span className="text-xs font-bold text-slate-800 block">Authorized Admin Email</span>
-                  <span className="text-xs text-slate-600 font-mono">{getAuthorizedAdminEmail()}</span>
-                </div>
-                <form onSubmit={handleChangeEmail} className="flex gap-2">
-                  <input
-                    type="email"
-                    placeholder="Update authorized email"
-                    value={changeEmailInput}
-                    onChange={e => setChangeEmailInput(e.target.value)}
-                    className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#c29b62]"
-                  />
-                  <button
-                    type="submit"
-                    className="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold"
-                  >
-                    Update Email
-                  </button>
-                </form>
-              </div>
-
               {/* Status Badge */}
-              <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 space-y-1">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-2">
                 <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
                   <CheckCircle size={15} className="text-emerald-600" />
-                  Google Authenticator 2FA is Active
+                  Hardlocked to {getAuthorizedAdminEmail()}
                 </span>
-                <p className="text-[11px] text-emerald-800">
-                  Every login strictly requires both your authorized email, password, and smartphone 6-digit TOTP code.
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  This portal is cryptographically locked to your email address only. Public registration is permanently disabled.
                 </p>
               </div>
 
-              {/* Backup Codes Section */}
-              <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800">Emergency Backup Codes</span>
                   <span className="text-[11px] font-semibold text-[#c29b62] bg-[#c29b62]/10 px-2.5 py-0.5 rounded-full">
@@ -1110,76 +782,17 @@ const AdminPortal: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  Single-use recovery codes for when your phone is unavailable.
+                  Single-use codes for when your phone is unavailable.
                 </p>
-
-                {newBackupCodes.length > 0 ? (
-                  <div className="space-y-2 pt-2">
-                    <div className="grid grid-cols-2 gap-2 bg-white p-3 rounded-xl border border-slate-200">
-                      {newBackupCodes.map((c, i) => (
-                        <div key={i} className="text-center font-mono font-bold text-[11px] text-slate-700">
-                          {c}
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDownloadCodes(newBackupCodes)}
-                      className="w-full py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-xs font-semibold text-slate-700 flex items-center justify-center gap-1.5"
-                    >
-                      <Download size={13} />
-                      Download New Codes (TXT)
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleRegenerateBackupCodes}
-                    className="w-full py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors"
-                  >
-                    Generate 8 New Emergency Backup Codes
-                  </button>
-                )}
               </div>
 
-              {/* Change Master Password Form */}
-              <form onSubmit={handleChangePassword} className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <span className="text-xs font-bold text-slate-800 block">Change Master Password</span>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="password"
-                    placeholder="New Password (min 6 chars)"
-                    value={newPasswordInput}
-                    onChange={e => setNewPasswordInput(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#c29b62]"
-                  />
-                  <input
-                    type="password"
-                    placeholder="Confirm New Password"
-                    value={confirmPasswordInput}
-                    onChange={e => setConfirmPasswordInput(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#c29b62]"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-2 rounded-xl bg-[#c29b62] hover:bg-[#b08b53] text-white text-xs font-bold tracking-wider uppercase transition-colors"
-                >
-                  Save New Password
-                </button>
-              </form>
-
-              {/* Reset Account / 2FA */}
-              <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
-                <span className="text-[11px] text-slate-400">Re-pair Authenticator phone?</span>
-                <button
-                  type="button"
-                  onClick={handleReset2FA}
-                  className="text-xs text-rose-600 hover:text-rose-800 font-semibold"
-                >
-                  Reset Account & 2FA
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowSecurityModal(false)}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold"
+              >
+                Done
+              </button>
             </motion.div>
           </div>
         )}

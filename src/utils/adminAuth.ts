@@ -1,19 +1,26 @@
-// Comprehensive unbypassable Admin Security & 2FA Engine
-// Provides email-restricted credentials, HMAC-SHA256 session signatures, rate limiting, anti-replay, and backup code recovery.
+// Hardlocked unbypassable Admin Security & 2FA Engine
+// Strictly bound to huzaifasura970@gmail.com
+// Zero public registration, AES-256-GCM vault decryption, anti-tamper HMAC sessions, and anti-replay protection.
 
-import { verifyTOTP, generateRandomSecret, sha256, base32ToUint8Array } from './totp';
+import { verifyTOTP, sha256, base32ToUint8Array } from './totp';
+import { decryptSecret } from './cryptoVault';
+import {
+  AUTHORIZED_ADMIN_EMAIL,
+  ADMIN_PWD_SALT,
+  ADMIN_PWD_HASH,
+  ENCRYPTED_TOTP_VAULT,
+  INITIAL_BACKUP_CODE_HASHES
+} from './adminConfig';
 
-const STORAGE_ADMIN_EMAIL = 'nisa_admin_email';
-const STORAGE_PASSWORD_HASH = 'nisa_admin_pwd_hash';
-const STORAGE_PASSWORD_SALT = 'nisa_admin_pwd_salt';
-const STORAGE_2FA_SECRET = 'nisa_admin_2fa_secret';
-const STORAGE_2FA_CONFIGURED = 'nisa_admin_2fa_configured';
-const STORAGE_BACKUP_CODES = 'nisa_admin_backup_codes';
+const STORAGE_CONSUMED_BACKUP_CODES = 'nisa_consumed_backup_hashes';
 const STORAGE_RATE_LIMIT = 'nisa_auth_rate_limit';
-const SESSION_KEY = 'nisa_admin_session_v2';
+const SESSION_KEY = 'nisa_admin_session_v3';
 const LAST_USED_STEP_KEY = 'nisa_last_totp_step';
 
 const SESSION_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+// In-memory active decrypted secret (never written to localStorage in plaintext)
+let inMemoryActiveSecret: string | null = null;
 
 export interface AdminSession {
   sessionId: string;
@@ -28,38 +35,18 @@ export interface RateLimitState {
 }
 
 // -------------------------------------------------------------
-// 1. Account Initialization & Email-Bound Credentials
+// 1. Strict Identity & Credential Verification
 // -------------------------------------------------------------
 
-export function isAdminInitialized(): boolean {
-  const email = localStorage.getItem(STORAGE_ADMIN_EMAIL);
-  const hash = localStorage.getItem(STORAGE_PASSWORD_HASH);
-  const configured = localStorage.getItem(STORAGE_2FA_CONFIGURED);
-  return Boolean(email && hash && configured === 'true');
-}
-
 export function getAuthorizedAdminEmail(): string {
-  return localStorage.getItem(STORAGE_ADMIN_EMAIL) || '';
-}
-
-export async function hashPassword(password: string, salt: string): Promise<string> {
-  return sha256(`${password}:::${salt}`);
-}
-
-export async function registerAdminAccount(email: string, password: string): Promise<void> {
-  const cleanEmail = email.toLowerCase().trim();
-  const salt = Math.random().toString(36).substring(2) + Date.now().toString(36);
-  const hash = await hashPassword(password, salt);
-
-  localStorage.setItem(STORAGE_ADMIN_EMAIL, cleanEmail);
-  localStorage.setItem(STORAGE_PASSWORD_HASH, hash);
-  localStorage.setItem(STORAGE_PASSWORD_SALT, salt);
+  return AUTHORIZED_ADMIN_EMAIL;
 }
 
 export async function verifyAdminCredentials(
   inputEmail: string,
   inputPassword: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; secret?: string; error?: string }> {
+  // 1. Check Rate Limit
   const isRateLimited = checkRateLimit();
   if (isRateLimited.isLocked) {
     return {
@@ -68,133 +55,95 @@ export async function verifyAdminCredentials(
     };
   }
 
-  const storedEmail = localStorage.getItem(STORAGE_ADMIN_EMAIL);
-  const storedHash = localStorage.getItem(STORAGE_PASSWORD_HASH);
-  const storedSalt = localStorage.getItem(STORAGE_PASSWORD_SALT);
-
-  // If not yet initialized, cannot login via credentials check
-  if (!storedEmail || !storedHash || !storedSalt) {
-    return { success: false, error: 'Admin account not initialized yet.' };
-  }
-
+  // 2. Strict Email Whitelist: ONLY huzaifasura970@gmail.com allowed!
   const cleanInputEmail = inputEmail.toLowerCase().trim();
-
-  // Strict email check: Must match the registered admin email!
-  if (cleanInputEmail !== storedEmail.toLowerCase().trim()) {
+  if (cleanInputEmail !== AUTHORIZED_ADMIN_EMAIL.toLowerCase().trim()) {
     recordAuthFailure();
-    return { success: false, error: 'Unauthorized email or incorrect password.' };
+    return { success: false, error: 'Access Denied: Unauthorized email address.' };
   }
 
-  // Strict password check
-  const inputHash = await hashPassword(inputPassword, storedSalt);
-  if (inputHash !== storedHash) {
+  // 3. Salted Password Hash Check
+  const inputHash = await sha256(`${inputPassword}:::${ADMIN_PWD_SALT}`);
+  if (inputHash !== ADMIN_PWD_HASH) {
     recordAuthFailure();
-    return { success: false, error: 'Unauthorized email or incorrect password.' };
+    return { success: false, error: 'Access Denied: Incorrect password.' };
   }
 
-  // Valid credentials
-  return { success: true };
-}
-
-export async function setMasterPassword(newPassword: string): Promise<void> {
-  const newSalt = Math.random().toString(36).substring(2) + Date.now().toString(36);
-  const newHash = await hashPassword(newPassword, newSalt);
-  localStorage.setItem(STORAGE_PASSWORD_HASH, newHash);
-  localStorage.setItem(STORAGE_PASSWORD_SALT, newSalt);
-}
-
-export function updateAdminEmail(newEmail: string): void {
-  localStorage.setItem(STORAGE_ADMIN_EMAIL, newEmail.toLowerCase().trim());
-}
-
-// -------------------------------------------------------------
-// 2. 2FA Secret & Configuration
-// -------------------------------------------------------------
-
-export function is2FAConfigured(): boolean {
-  const secret = localStorage.getItem(STORAGE_2FA_SECRET);
-  const configured = localStorage.getItem(STORAGE_2FA_CONFIGURED);
-  return Boolean(secret && configured === 'true');
-}
-
-export function getOrCreate2FASecret(): string {
-  let secret = localStorage.getItem(STORAGE_2FA_SECRET);
-  if (!secret) {
-    secret = generateRandomSecret(20);
-    localStorage.setItem(STORAGE_2FA_SECRET, secret);
-    localStorage.setItem(STORAGE_2FA_CONFIGURED, 'false');
+  // 4. Decrypt TOTP Secret from AES-256-GCM Vault using the password
+  try {
+    const decrypted = await decryptSecret(ENCRYPTED_TOTP_VAULT, inputPassword);
+    inMemoryActiveSecret = decrypted;
+    return { success: true, secret: decrypted };
+  } catch (err) {
+    console.error('Vault decryption error:', err);
+    recordAuthFailure();
+    return { success: false, error: 'Cryptographic vault verification failed.' };
   }
-  return secret;
 }
 
-export function getStored2FASecret(): string | null {
-  return localStorage.getItem(STORAGE_2FA_SECRET);
+export function getActiveTOTPSecret(): string | null {
+  return inMemoryActiveSecret;
 }
 
-export function confirm2FASetup(secret: string): void {
-  localStorage.setItem(STORAGE_2FA_SECRET, secret);
-  localStorage.setItem(STORAGE_2FA_CONFIGURED, 'true');
-}
-
-export function reset2FASettings(): void {
-  localStorage.removeItem(STORAGE_ADMIN_EMAIL);
-  localStorage.removeItem(STORAGE_PASSWORD_HASH);
-  localStorage.removeItem(STORAGE_PASSWORD_SALT);
-  localStorage.removeItem(STORAGE_2FA_SECRET);
-  localStorage.removeItem(STORAGE_2FA_CONFIGURED);
-  localStorage.removeItem(STORAGE_BACKUP_CODES);
-  logoutAdmin();
+export function setActiveTOTPSecret(secret: string): void {
+  inMemoryActiveSecret = secret;
 }
 
 // -------------------------------------------------------------
-// 3. Backup Recovery Codes
+// 2. Emergency Backup Codes Verification
 // -------------------------------------------------------------
-
-export async function saveBackupCodes(codes: string[]): Promise<void> {
-  const hashedCodes = await Promise.all(codes.map(c => sha256(c.toUpperCase().trim())));
-  localStorage.setItem(STORAGE_BACKUP_CODES, JSON.stringify(hashedCodes));
-}
 
 export async function verifyAndConsumeBackupCode(inputCode: string): Promise<boolean> {
   const isRateLimited = checkRateLimit();
   if (isRateLimited.isLocked) return false;
 
-  const stored = localStorage.getItem(STORAGE_BACKUP_CODES);
-  if (!stored) return false;
+  const cleanCode = inputCode.toUpperCase().trim();
+  const inputHash = await sha256(cleanCode);
 
-  try {
-    const hashedList: string[] = JSON.parse(stored);
-    const inputHash = await sha256(inputCode.toUpperCase().trim());
-
-    const matchIdx = hashedList.indexOf(inputHash);
-    if (matchIdx !== -1) {
-      // Consume the code so it cannot be reused
-      hashedList.splice(matchIdx, 1);
-      localStorage.setItem(STORAGE_BACKUP_CODES, JSON.stringify(hashedList));
-      resetAuthFailures();
-      return true;
-    }
-  } catch (e) {
-    console.error('Failed to parse backup codes', e);
+  // Check if it's one of the valid initial hashes
+  if (!INITIAL_BACKUP_CODE_HASHES.includes(inputHash)) {
+    recordAuthFailure();
+    return false;
   }
 
-  recordAuthFailure();
-  return false;
+  // Check if already consumed
+  const consumedRaw = localStorage.getItem(STORAGE_CONSUMED_BACKUP_CODES);
+  let consumedList: string[] = [];
+  if (consumedRaw) {
+    try {
+      consumedList = JSON.parse(consumedRaw);
+    } catch {
+      consumedList = [];
+    }
+  }
+
+  if (consumedList.includes(inputHash)) {
+    recordAuthFailure();
+    return false; // Already consumed
+  }
+
+  // Mark as consumed
+  consumedList.push(inputHash);
+  localStorage.setItem(STORAGE_CONSUMED_BACKUP_CODES, JSON.stringify(consumedList));
+  resetAuthFailures();
+  return true;
 }
 
 export function getRemainingBackupCodesCount(): number {
-  const stored = localStorage.getItem(STORAGE_BACKUP_CODES);
-  if (!stored) return 0;
-  try {
-    const list: string[] = JSON.parse(stored);
-    return list.length;
-  } catch {
-    return 0;
+  const consumedRaw = localStorage.getItem(STORAGE_CONSUMED_BACKUP_CODES);
+  let consumedCount = 0;
+  if (consumedRaw) {
+    try {
+      consumedCount = JSON.parse(consumedRaw).length;
+    } catch {
+      consumedCount = 0;
+    }
   }
+  return Math.max(0, INITIAL_BACKUP_CODE_HASHES.length - consumedCount);
 }
 
 // -------------------------------------------------------------
-// 4. Rate Limiting & Anti-Brute Force Protection
+// 3. Rate Limiting & Anti-Brute Force Protection
 // -------------------------------------------------------------
 
 export function checkRateLimit(): { isLocked: boolean; remainingSeconds: number } {
@@ -239,7 +188,7 @@ export function resetAuthFailures(): void {
 }
 
 // -------------------------------------------------------------
-// 5. Replay Attack & TOTP Verification
+// 4. Replay Attack & TOTP Verification
 // -------------------------------------------------------------
 
 export async function verifyTOTPWithReplayProtection(
@@ -260,7 +209,7 @@ export async function verifyTOTPWithReplayProtection(
   if (lastUsedStep && Number(lastUsedStep) === currentStep) {
     return {
       success: false,
-      error: 'This TOTP code has already been used. Please wait for the next 30-second code.'
+      error: 'This code was just used. Please wait for the next 30-second code.'
     };
   }
 
@@ -277,7 +226,7 @@ export async function verifyTOTPWithReplayProtection(
 }
 
 // -------------------------------------------------------------
-// 6. Cryptographic Session Token & Anti-Tamper Verification
+// 5. Cryptographic HMAC Session Tokens & Tamper Protection
 // -------------------------------------------------------------
 
 async function computeSessionSignature(
@@ -286,7 +235,7 @@ async function computeSessionSignature(
   expiresAt: number,
   secret: string
 ): Promise<string> {
-  const data = `${sessionId}:${issuedAt}:${expiresAt}`;
+  const data = `${sessionId}:${issuedAt}:${expiresAt}:${AUTHORIZED_ADMIN_EMAIL}`;
   const keyBytes = base32ToUint8Array(secret);
   const encoder = new TextEncoder();
 
@@ -312,6 +261,7 @@ export async function createAdminSession(secret: string): Promise<void> {
   const signature = await computeSessionSignature(sessionId, issuedAt, expiresAt, secret);
   const session: AdminSession = { sessionId, issuedAt, expiresAt, signature };
 
+  // Store active secret in session (AES keying)
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
@@ -319,20 +269,18 @@ export async function validateAdminSession(): Promise<boolean> {
   const raw = sessionStorage.getItem(SESSION_KEY);
   if (!raw) return false;
 
-  const secret = getStored2FASecret();
+  const secret = inMemoryActiveSecret;
   if (!secret) return false;
 
   try {
     const session: AdminSession = JSON.parse(raw);
     const now = Date.now();
 
-    // 1. Check expiration
     if (now > session.expiresAt || now < session.issuedAt) {
       sessionStorage.removeItem(SESSION_KEY);
       return false;
     }
 
-    // 2. Cryptographically re-verify HMAC signature
     const expectedSig = await computeSessionSignature(
       session.sessionId,
       session.issuedAt,
@@ -341,7 +289,6 @@ export async function validateAdminSession(): Promise<boolean> {
     );
 
     if (session.signature !== expectedSig) {
-      console.warn('Tampered session detected! Invalidating.');
       sessionStorage.removeItem(SESSION_KEY);
       return false;
     }
@@ -354,7 +301,7 @@ export async function validateAdminSession(): Promise<boolean> {
 }
 
 export function logoutAdmin(): void {
+  inMemoryActiveSecret = null;
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem(LAST_USED_STEP_KEY);
-  sessionStorage.removeItem('nisa_admin_auth');
 }

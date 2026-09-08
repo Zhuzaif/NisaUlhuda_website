@@ -1,10 +1,11 @@
 // Comprehensive unbypassable Admin Security & 2FA Engine
-// Provides HMAC-SHA256 session signatures, rate limiting, anti-replay, and backup code recovery.
+// Provides email-restricted credentials, HMAC-SHA256 session signatures, rate limiting, anti-replay, and backup code recovery.
 
 import { verifyTOTP, generateRandomSecret, sha256, base32ToUint8Array } from './totp';
 
-const STORAGE_PIN_HASH = 'nisa_admin_pin_hash';
-const STORAGE_PIN_SALT = 'nisa_admin_pin_salt';
+const STORAGE_ADMIN_EMAIL = 'nisa_admin_email';
+const STORAGE_PASSWORD_HASH = 'nisa_admin_pwd_hash';
+const STORAGE_PASSWORD_SALT = 'nisa_admin_pwd_salt';
 const STORAGE_2FA_SECRET = 'nisa_admin_2fa_secret';
 const STORAGE_2FA_CONFIGURED = 'nisa_admin_2fa_configured';
 const STORAGE_BACKUP_CODES = 'nisa_admin_backup_codes';
@@ -12,8 +13,6 @@ const STORAGE_RATE_LIMIT = 'nisa_auth_rate_limit';
 const SESSION_KEY = 'nisa_admin_session_v2';
 const LAST_USED_STEP_KEY = 'nisa_last_totp_step';
 
-const DEFAULT_PIN = 'nisa786';
-const DEFAULT_SALT = 'nisa_secure_salt_786';
 const SESSION_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 export interface AdminSession {
@@ -29,44 +28,83 @@ export interface RateLimitState {
 }
 
 // -------------------------------------------------------------
-// 1. PIN & Master Password Management
+// 1. Account Initialization & Email-Bound Credentials
 // -------------------------------------------------------------
 
-export async function hashPin(pin: string, salt: string): Promise<string> {
-  return sha256(`${pin}:${salt}`);
+export function isAdminInitialized(): boolean {
+  const email = localStorage.getItem(STORAGE_ADMIN_EMAIL);
+  const hash = localStorage.getItem(STORAGE_PASSWORD_HASH);
+  const configured = localStorage.getItem(STORAGE_2FA_CONFIGURED);
+  return Boolean(email && hash && configured === 'true');
 }
 
-export async function verifyMasterPin(inputPin: string): Promise<boolean> {
+export function getAuthorizedAdminEmail(): string {
+  return localStorage.getItem(STORAGE_ADMIN_EMAIL) || '';
+}
+
+export async function hashPassword(password: string, salt: string): Promise<string> {
+  return sha256(`${password}:::${salt}`);
+}
+
+export async function registerAdminAccount(email: string, password: string): Promise<void> {
+  const cleanEmail = email.toLowerCase().trim();
+  const salt = Math.random().toString(36).substring(2) + Date.now().toString(36);
+  const hash = await hashPassword(password, salt);
+
+  localStorage.setItem(STORAGE_ADMIN_EMAIL, cleanEmail);
+  localStorage.setItem(STORAGE_PASSWORD_HASH, hash);
+  localStorage.setItem(STORAGE_PASSWORD_SALT, salt);
+}
+
+export async function verifyAdminCredentials(
+  inputEmail: string,
+  inputPassword: string
+): Promise<{ success: boolean; error?: string }> {
   const isRateLimited = checkRateLimit();
   if (isRateLimited.isLocked) {
-    return false;
+    return {
+      success: false,
+      error: `Too many failed attempts. Portal locked for ${isRateLimited.remainingSeconds} seconds.`
+    };
   }
 
-  const storedHash = localStorage.getItem(STORAGE_PIN_HASH);
-  const storedSalt = localStorage.getItem(STORAGE_PIN_SALT) || DEFAULT_SALT;
+  const storedEmail = localStorage.getItem(STORAGE_ADMIN_EMAIL);
+  const storedHash = localStorage.getItem(STORAGE_PASSWORD_HASH);
+  const storedSalt = localStorage.getItem(STORAGE_PASSWORD_SALT);
 
-  let isValid = false;
-  if (!storedHash) {
-    // If no custom PIN configured yet, check against default PIN
-    const defaultHash = await hashPin(DEFAULT_PIN, DEFAULT_SALT);
-    const inputHash = await hashPin(inputPin, DEFAULT_SALT);
-    isValid = (inputHash === defaultHash);
-  } else {
-    const inputHash = await hashPin(inputPin, storedSalt);
-    isValid = (inputHash === storedHash);
+  // If not yet initialized, cannot login via credentials check
+  if (!storedEmail || !storedHash || !storedSalt) {
+    return { success: false, error: 'Admin account not initialized yet.' };
   }
 
-  if (!isValid) {
+  const cleanInputEmail = inputEmail.toLowerCase().trim();
+
+  // Strict email check: Must match the registered admin email!
+  if (cleanInputEmail !== storedEmail.toLowerCase().trim()) {
     recordAuthFailure();
+    return { success: false, error: 'Unauthorized email or incorrect password.' };
   }
-  return isValid;
+
+  // Strict password check
+  const inputHash = await hashPassword(inputPassword, storedSalt);
+  if (inputHash !== storedHash) {
+    recordAuthFailure();
+    return { success: false, error: 'Unauthorized email or incorrect password.' };
+  }
+
+  // Valid credentials
+  return { success: true };
 }
 
-export async function setMasterPin(newPin: string): Promise<void> {
+export async function setMasterPassword(newPassword: string): Promise<void> {
   const newSalt = Math.random().toString(36).substring(2) + Date.now().toString(36);
-  const newHash = await hashPin(newPin, newSalt);
-  localStorage.setItem(STORAGE_PIN_HASH, newHash);
-  localStorage.setItem(STORAGE_PIN_SALT, newSalt);
+  const newHash = await hashPassword(newPassword, newSalt);
+  localStorage.setItem(STORAGE_PASSWORD_HASH, newHash);
+  localStorage.setItem(STORAGE_PASSWORD_SALT, newSalt);
+}
+
+export function updateAdminEmail(newEmail: string): void {
+  localStorage.setItem(STORAGE_ADMIN_EMAIL, newEmail.toLowerCase().trim());
 }
 
 // -------------------------------------------------------------
@@ -99,6 +137,9 @@ export function confirm2FASetup(secret: string): void {
 }
 
 export function reset2FASettings(): void {
+  localStorage.removeItem(STORAGE_ADMIN_EMAIL);
+  localStorage.removeItem(STORAGE_PASSWORD_HASH);
+  localStorage.removeItem(STORAGE_PASSWORD_SALT);
   localStorage.removeItem(STORAGE_2FA_SECRET);
   localStorage.removeItem(STORAGE_2FA_CONFIGURED);
   localStorage.removeItem(STORAGE_BACKUP_CODES);
@@ -315,5 +356,5 @@ export async function validateAdminSession(): Promise<boolean> {
 export function logoutAdmin(): void {
   sessionStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem(LAST_USED_STEP_KEY);
-  sessionStorage.removeItem('nisa_admin_auth'); // Clean up old legacy keys
+  sessionStorage.removeItem('nisa_admin_auth');
 }

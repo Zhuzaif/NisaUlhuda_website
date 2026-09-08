@@ -9,6 +9,7 @@ import {
   Image, 
   RefreshCw, 
   Eye, 
+  EyeOff,
   Download, 
   Globe, 
   LogOut, 
@@ -17,7 +18,9 @@ import {
   Copy, 
   Check, 
   Plus, 
-  X
+  X,
+  Mail,
+  UserCheck
 } from 'lucide-react';
 import type { DailyAyat } from '../types/ayat';
 import { getAyats, saveLocalAyat, getStoredGitHubToken, setStoredGitHubToken, publishToGitHub } from '../utils/ayatStorage';
@@ -25,9 +28,12 @@ import { initialAyats } from '../data/defaultAyats';
 import { generateQRMatrix, getQRPath } from '../utils/qrCode';
 import { getOtpAuthUri, generateBackupCodes } from '../utils/totp';
 import { 
-  verifyMasterPin, 
-  setMasterPin, 
-  is2FAConfigured, 
+  isAdminInitialized,
+  registerAdminAccount,
+  verifyAdminCredentials,
+  getAuthorizedAdminEmail,
+  setMasterPassword,
+  updateAdminEmail,
   getOrCreate2FASecret, 
   confirm2FASetup, 
   verifyTOTPWithReplayProtection, 
@@ -55,10 +61,20 @@ const AdminPortal: React.FC = () => {
   // Authentication & 2FA State
   // -------------------------------------------------------------
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authStep, setAuthStep] = useState<'pin' | '2fa-verify' | '2fa-setup' | '2fa-backup-codes'>('pin');
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
+  const [authStep, setAuthStep] = useState<'login' | 'setup-account' | '2fa-verify' | '2fa-setup' | '2fa-backup-codes'>('login');
   
+  // Login Form State
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Setup Form State (One-Time Owner Registration)
+  const [setupEmail, setSetupEmail] = useState('');
+  const [setupPassword, setSetupPassword] = useState('');
+  const [setupConfirmPassword, setSetupConfirmPassword] = useState('');
+  const [setupError, setSetupError] = useState('');
+
   // 2FA Verification State
   const [totpInput, setTotpInput] = useState('');
   const [totpError, setTotpError] = useState('');
@@ -72,8 +88,9 @@ const AdminPortal: React.FC = () => {
   // Security Settings Modal in Dashboard
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [remainingBackupCount, setRemainingBackupCount] = useState(0);
-  const [newPinInput, setNewPinInput] = useState('');
-  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [changeEmailInput, setChangeEmailInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
   const [securityStatusMsg, setSecurityStatusMsg] = useState<{ success?: boolean; text: string } | null>(null);
 
   // GitHub Settings State
@@ -118,7 +135,15 @@ const AdminPortal: React.FC = () => {
       setRateLimitSeconds(rl.remainingSeconds);
     }
 
-    // 2. Cryptographically validate session token against 2FA secret
+    // 2. Check if admin account initialized
+    const initialized = isAdminInitialized();
+    if (!initialized) {
+      setAuthStep('setup-account');
+    } else {
+      setAuthStep('login');
+    }
+
+    // 3. Cryptographically validate session token against 2FA secret
     validateAdminSession().then(valid => {
       if (valid) {
         setIsAuthenticated(true);
@@ -127,7 +152,7 @@ const AdminPortal: React.FC = () => {
       }
     });
 
-    // 3. Load custom categories
+    // 4. Load custom categories
     try {
       const saved = localStorage.getItem('nisa_custom_categories');
       if (saved) {
@@ -177,13 +202,14 @@ const AdminPortal: React.FC = () => {
   // QR Code generation for 2FA Setup
   const qrMatrix = useMemo(() => {
     if (!totpSecret) return null;
-    const uri = getOtpAuthUri(totpSecret, 'admin@nisaulhuda.app', 'Nisa Ul Huda');
+    const activeEmail = getAuthorizedAdminEmail() || setupEmail || 'admin@nisaulhuda.app';
+    const uri = getOtpAuthUri(totpSecret, activeEmail, 'Nisa Ul Huda');
     try {
       return generateQRMatrix(uri);
     } catch {
       return null;
     }
-  }, [totpSecret]);
+  }, [totpSecret, setupEmail]);
 
   const qrPath = useMemo(() => {
     if (!qrMatrix) return '';
@@ -193,42 +219,68 @@ const AdminPortal: React.FC = () => {
   // -------------------------------------------------------------
   // Authentication Handlers
   // -------------------------------------------------------------
-  const handlePinSubmit = async (e: React.FormEvent) => {
+
+  // One-time Setup Form Submit (Sets Authorized Email & Password)
+  const handleSetupAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPinError('');
+    setSetupError('');
+
+    const cleanEmail = setupEmail.toLowerCase().trim();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setSetupError('Please enter a valid Gmail / email address.');
+      return;
+    }
+
+    if (setupPassword.length < 6) {
+      setSetupError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (setupPassword !== setupConfirmPassword) {
+      setSetupError('Passwords do not match.');
+      return;
+    }
+
+    // Register email and password hash
+    await registerAdminAccount(cleanEmail, setupPassword);
+
+    // Generate 2FA Secret for Google Authenticator
+    const secret = getOrCreate2FASecret();
+    setTotpSecret(secret);
+    setAuthStep('2fa-setup');
+  };
+
+  // Standard Login Submit (Verifies Registered Email + Password)
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
 
     const rl = checkRateLimit();
     if (rl.isLocked) {
       setRateLimitSeconds(rl.remainingSeconds);
-      setPinError(`Too many failed attempts. Locked for ${rl.remainingSeconds} seconds.`);
+      setLoginError(`Portal locked for ${rl.remainingSeconds}s due to failed attempts.`);
       return;
     }
 
-    const isValid = await verifyMasterPin(pinInput);
-    if (!isValid) {
+    const credResult = await verifyAdminCredentials(emailInput, passwordInput);
+    if (!credResult.success) {
       const updatedRl = checkRateLimit();
       if (updatedRl.isLocked) {
         setRateLimitSeconds(updatedRl.remainingSeconds);
-        setPinError(`Locked for ${updatedRl.remainingSeconds}s due to repeated failures.`);
+        setLoginError(`Locked for ${updatedRl.remainingSeconds}s due to repeated failures.`);
       } else {
-        setPinError('Incorrect Master PIN. Please try again.');
+        setLoginError(credResult.error || 'Invalid authorized email or password.');
       }
       return;
     }
 
-    // PIN is valid! Check if 2FA is configured
-    if (is2FAConfigured()) {
-      setAuthStep('2fa-verify');
-      setTotpInput('');
-      setTotpError('');
-    } else {
-      // First time: Start 2FA Setup Flow
-      const secret = getOrCreate2FASecret();
-      setTotpSecret(secret);
-      setAuthStep('2fa-setup');
-    }
+    // Email and Password are valid! Now proceed to Google Authenticator
+    setAuthStep('2fa-verify');
+    setTotpInput('');
+    setTotpError('');
   };
 
+  // Confirm Google Authenticator Setup
   const handle2FAConfirmSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     setTotpError('');
@@ -253,6 +305,7 @@ const AdminPortal: React.FC = () => {
     setRemainingBackupCount(8);
   };
 
+  // Verify Google Authenticator Code during Login
   const handle2FAVerifyLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setTotpError('');
@@ -278,15 +331,15 @@ const AdminPortal: React.FC = () => {
       await createAdminSession(secret);
       setIsAuthenticated(true);
     } else {
-      setTotpError(result.error || 'Incorrect 6-digit code. Please verify time synchronization.');
+      setTotpError(result.error || 'Incorrect 6-digit code. Check your Google Authenticator app.');
     }
   };
 
   const handleLogout = () => {
     logoutAdmin();
     setIsAuthenticated(false);
-    setAuthStep('pin');
-    setPinInput('');
+    setAuthStep('login');
+    setPasswordInput('');
     setTotpInput('');
   };
 
@@ -301,27 +354,39 @@ const AdminPortal: React.FC = () => {
     setSecurityStatusMsg({ success: true, text: '8 new backup recovery codes generated and saved!' });
   };
 
-  const handleChangePin = async (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPinInput || newPinInput.length < 4) {
-      setSecurityStatusMsg({ success: false, text: 'New PIN must be at least 4 characters long.' });
+    if (!newPasswordInput || newPasswordInput.length < 6) {
+      setSecurityStatusMsg({ success: false, text: 'New password must be at least 6 characters long.' });
       return;
     }
-    if (newPinInput !== confirmPinInput) {
-      setSecurityStatusMsg({ success: false, text: 'New PIN and Confirm PIN do not match.' });
+    if (newPasswordInput !== confirmPasswordInput) {
+      setSecurityStatusMsg({ success: false, text: 'New password and Confirm password do not match.' });
       return;
     }
-    await setMasterPin(newPinInput);
-    setNewPinInput('');
-    setConfirmPinInput('');
-    setSecurityStatusMsg({ success: true, text: 'Master PIN successfully updated!' });
+    await setMasterPassword(newPasswordInput);
+    setNewPasswordInput('');
+    setConfirmPasswordInput('');
+    setSecurityStatusMsg({ success: true, text: 'Master Password successfully updated!' });
+  };
+
+  const handleChangeEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = changeEmailInput.toLowerCase().trim();
+    if (!clean || !clean.includes('@')) {
+      setSecurityStatusMsg({ success: false, text: 'Please enter a valid email address.' });
+      return;
+    }
+    updateAdminEmail(clean);
+    setChangeEmailInput('');
+    setSecurityStatusMsg({ success: true, text: `Authorized Admin Email updated to: ${clean}` });
   };
 
   const handleReset2FA = () => {
-    if (window.confirm('Are you sure you want to reset 2FA? You will need to re-link Google Authenticator.')) {
+    if (window.confirm('Are you sure you want to reset Admin Credentials and 2FA? You will need to re-initialize your account.')) {
       reset2FASettings();
       setShowSecurityModal(false);
-      setAuthStep('pin');
+      setAuthStep('setup-account');
     }
   };
 
@@ -464,7 +529,7 @@ const AdminPortal: React.FC = () => {
   };
 
   const handleDownloadCodes = (codes: string[]) => {
-    const text = `Nisa Ul Huda Admin Emergency Backup Codes\nGenerated on: ${new Date().toLocaleString()}\n\nKeep these single-use codes in a safe place:\n\n${codes.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\nEach code can be used only once if you lose access to Google Authenticator.`;
+    const text = `Nisa Ul Huda Admin Emergency Backup Codes\nGenerated on: ${new Date().toLocaleString()}\nAuthorized Email: ${getAuthorizedAdminEmail()}\n\nKeep these single-use codes in a safe place:\n\n${codes.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\nEach code can be used only once if you lose access to Google Authenticator.`;
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -475,12 +540,12 @@ const AdminPortal: React.FC = () => {
   };
 
   // -------------------------------------------------------------
-  // Render: Login & 2FA Setup Views
+  // Render: Login, One-Time Setup & 2FA Views
   // -------------------------------------------------------------
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#0d131f] flex items-center justify-center p-4 relative overflow-hidden font-sans">
-        {/* Background Overlay */}
+        {/* Luxury Background Overlay */}
         <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
           <div
             className="absolute inset-0 bg-cover bg-center"
@@ -494,14 +559,108 @@ const AdminPortal: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="relative z-10 w-full max-w-lg bg-white rounded-3xl p-8 sm:p-10 shadow-2xl text-center space-y-6 border border-slate-100"
         >
-          {/* STEP 1: Enter Master PIN */}
-          {authStep === 'pin' && (
-            <div className="space-y-6">
-              <div className="w-16 h-16 rounded-2xl bg-[#c29b62]/15 border border-[#c29b62]/30 text-[#c29b62] flex items-center justify-center mx-auto shadow-inner">
-                <Lock size={28} />
+          {/* VIEW 1: ONE-TIME OWNER SETUP (If portal is not yet initialized with Gmail) */}
+          {authStep === 'setup-account' && (
+            <div className="space-y-6 text-left">
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 rounded-2xl bg-[#c29b62]/15 border border-[#c29b62]/30 text-[#c29b62] flex items-center justify-center mx-auto shadow-inner">
+                  <UserCheck size={30} />
+                </div>
+                <span className="text-[10px] text-[#c29b62] font-bold uppercase tracking-widest block">
+                  First-Time Owner Registration
+                </span>
+                <h1 className="text-2xl font-serif font-bold text-slate-900">
+                  Bind Your Admin Account
+                </h1>
+                <p className="text-slate-500 text-xs">
+                  Register your authorized Gmail and master password. No other email will ever be able to access this portal.
+                </p>
               </div>
 
-              <div className="space-y-2">
+              <form onSubmit={handleSetupAccountSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Mail size={13} className="text-[#c29b62]" />
+                    Your Authorized Gmail Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={setupEmail}
+                    onChange={e => setSetupEmail(e.target.value)}
+                    placeholder="e.g. yourname@gmail.com"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white transition-all font-medium"
+                    autoFocus
+                  />
+                  <span className="text-[10px] text-slate-400 block mt-1">
+                    Only this specific email will be authorized to login.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Lock size={13} className="text-[#c29b62]" />
+                    Choose Master Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={setupPassword}
+                      onChange={e => setSetupPassword(e.target.value)}
+                      placeholder="Minimum 6 characters"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 pr-11 text-sm text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Confirm Master Password *
+                  </label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={setupConfirmPassword}
+                    onChange={e => setSetupConfirmPassword(e.target.value)}
+                    placeholder="Re-enter your password"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white transition-all"
+                  />
+                </div>
+
+                {setupError && (
+                  <p className="text-rose-600 text-xs flex items-center gap-1 font-medium bg-rose-50 p-2.5 rounded-xl border border-rose-100">
+                    <AlertCircle size={14} />
+                    {setupError}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full bg-[#c29b62] hover:bg-[#b08b53] text-white font-bold py-3.5 rounded-2xl text-xs uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <ShieldCheck size={16} />
+                  Proceed to Google Authenticator Link
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* VIEW 2: STANDARD LOGIN (Email + Password Check) */}
+          {authStep === 'login' && (
+            <div className="space-y-6 text-left">
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 rounded-2xl bg-[#c29b62]/15 border border-[#c29b62]/30 text-[#c29b62] flex items-center justify-center mx-auto shadow-inner">
+                  <Lock size={28} />
+                </div>
+
                 <span className="text-[10px] text-[#c29b62] font-bold uppercase tracking-widest block">
                   Private Administration
                 </span>
@@ -509,31 +668,63 @@ const AdminPortal: React.FC = () => {
                   Nisa Ul Huda CMS
                 </h1>
                 <p className="text-slate-500 text-xs">
-                  Enter your Master PIN to access the 2FA-secured publisher.
+                  Sign in with your authorized admin email and password.
                 </p>
               </div>
 
-              <form onSubmit={handlePinSubmit} className="space-y-4">
-                <input
-                  type="password"
-                  value={pinInput}
-                  onChange={e => setPinInput(e.target.value)}
-                  placeholder="Enter PIN (Default: nisa786)"
-                  disabled={rateLimitSeconds > 0}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-center text-lg tracking-widest text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white focus:ring-2 focus:ring-[#c29b62]/20 transition-all font-semibold disabled:opacity-50"
-                  autoFocus
-                />
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Mail size={13} className="text-[#c29b62]" />
+                    Admin Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={emailInput}
+                    onChange={e => setEmailInput(e.target.value)}
+                    placeholder="Enter authorized email"
+                    disabled={rateLimitSeconds > 0}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white transition-all font-medium disabled:opacity-50"
+                    autoFocus
+                  />
+                </div>
 
-                {pinError && (
-                  <p className="text-rose-600 text-xs flex items-center justify-center gap-1 font-medium bg-rose-50 p-2.5 rounded-xl border border-rose-100">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Lock size={13} className="text-[#c29b62]" />
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={passwordInput}
+                      onChange={e => setPasswordInput(e.target.value)}
+                      placeholder="Enter password"
+                      disabled={rateLimitSeconds > 0}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 pr-11 text-sm text-slate-900 focus:outline-none focus:border-[#c29b62] focus:bg-white transition-all disabled:opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {loginError && (
+                  <p className="text-rose-600 text-xs flex items-center gap-1 font-medium bg-rose-50 p-2.5 rounded-xl border border-rose-100">
                     <AlertCircle size={14} />
-                    {pinError}
+                    {loginError}
                   </p>
                 )}
 
                 {rateLimitSeconds > 0 && (
-                  <p className="text-amber-600 text-xs font-semibold">
-                    ⏳ Security cooldown: Please wait {rateLimitSeconds}s
+                  <p className="text-amber-600 text-xs font-semibold text-center">
+                    ⏳ Security lock: Please wait {rateLimitSeconds}s
                   </p>
                 )}
 
@@ -547,16 +738,16 @@ const AdminPortal: React.FC = () => {
                 </button>
               </form>
 
-              <div className="pt-2 border-t border-slate-100">
+              <div className="pt-2 border-t border-slate-100 text-center">
                 <span className="text-[11px] text-slate-400 font-light flex items-center justify-center gap-1.5">
                   <ShieldCheck size={13} className="text-emerald-600" />
-                  Protected with Google Authenticator (TOTP)
+                  Protected by Email Authorization + Google Authenticator
                 </span>
               </div>
             </div>
           )}
 
-          {/* STEP 2A: 2FA Verification (Already Configured) */}
+          {/* VIEW 3: 2FA VERIFICATION (TOTP Code from Google Authenticator) */}
           {authStep === '2fa-verify' && (
             <div className="space-y-6">
               <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
@@ -573,7 +764,7 @@ const AdminPortal: React.FC = () => {
                 <p className="text-slate-500 text-xs">
                   {isUsingBackupCode
                     ? 'Enter one of your 8-digit emergency recovery codes (e.g. 4829-1940).'
-                    : 'Enter the 6-digit code currently shown in your Google Authenticator app.'}
+                    : `Enter the 6-digit code shown for Nisa Ul Huda (${getAuthorizedAdminEmail()}).`}
                 </p>
               </div>
 
@@ -620,18 +811,18 @@ const AdminPortal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthStep('pin');
+                    setAuthStep('login');
                     setTotpInput('');
                   }}
                   className="text-slate-400 hover:text-slate-600"
                 >
-                  Back to PIN
+                  Back to Login
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 2B: 2FA Setup Flow (First Time) */}
+          {/* VIEW 4: 2FA SETUP (QR Code for Google Authenticator) */}
           {authStep === '2fa-setup' && (
             <div className="space-y-5 text-left">
               <div className="text-center space-y-1">
@@ -639,10 +830,13 @@ const AdminPortal: React.FC = () => {
                   <Smartphone size={24} />
                 </div>
                 <h2 className="text-xl font-serif font-bold text-slate-900">
-                  Set Up Google Authenticator
+                  Scan in Google Authenticator
                 </h2>
                 <p className="text-slate-500 text-xs">
-                  Scan this QR code with Google Authenticator on your phone to link your 2FA account.
+                  Scan this QR code in Google Authenticator. It will be labeled as:
+                  <strong className="block text-slate-800 font-mono mt-0.5">
+                    Nisa Ul Huda ({setupEmail || getAuthorizedAdminEmail()})
+                  </strong>
                 </p>
               </div>
 
@@ -717,13 +911,13 @@ const AdminPortal: React.FC = () => {
                   className="w-full bg-[#c29b62] hover:bg-[#b08b53] text-white font-bold py-3.5 rounded-2xl text-xs uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   <ShieldCheck size={16} />
-                  Confirm & Enable 2FA
+                  Confirm & Activate 2FA
                 </button>
               </form>
             </div>
           )}
 
-          {/* STEP 2C: Display Emergency Backup Codes */}
+          {/* VIEW 5: EMERGENCY BACKUP CODES (Shown After Setup) */}
           {authStep === '2fa-backup-codes' && (
             <div className="space-y-5 text-left">
               <div className="text-center space-y-1">
@@ -734,7 +928,7 @@ const AdminPortal: React.FC = () => {
                   Save Your Emergency Backup Codes
                 </h2>
                 <p className="text-slate-500 text-xs">
-                  If you ever lose your phone or Google Authenticator app, these 8 single-use codes are your ONLY way to regain access.
+                  If you ever lose your phone or Google Authenticator, these 8 single-use codes are your ONLY way to regain access.
                 </p>
               </div>
 
@@ -797,7 +991,7 @@ const AdminPortal: React.FC = () => {
               <h2 className="text-base font-serif font-bold text-slate-900 leading-none">Daily Ayat Manager</h2>
               <span className="text-[10px] text-[#c29b62] uppercase font-bold tracking-wider flex items-center gap-1">
                 <ShieldCheck size={12} className="text-emerald-600" />
-                2FA Protected • GitHub Publisher
+                {getAuthorizedAdminEmail()} • 2FA Active
               </span>
             </div>
           </div>
@@ -812,7 +1006,7 @@ const AdminPortal: React.FC = () => {
               title="Manage 2FA Security"
             >
               <ShieldCheck size={14} className="text-emerald-600" />
-              <span className="hidden sm:inline">2FA Security</span>
+              <span className="hidden sm:inline">2FA & Account</span>
             </button>
 
             <button
@@ -854,7 +1048,7 @@ const AdminPortal: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2 text-slate-900 font-serif font-bold text-lg">
                   <ShieldCheck className="text-emerald-600" size={20} />
-                  Security & 2FA Management
+                  Security & Account Management
                 </div>
                 <button
                   onClick={() => setShowSecurityModal(false)}
@@ -873,6 +1067,29 @@ const AdminPortal: React.FC = () => {
                 </div>
               )}
 
+              {/* Authorized Email Display & Change */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                <div>
+                  <span className="text-xs font-bold text-slate-800 block">Authorized Admin Email</span>
+                  <span className="text-xs text-slate-600 font-mono">{getAuthorizedAdminEmail()}</span>
+                </div>
+                <form onSubmit={handleChangeEmail} className="flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="Update authorized email"
+                    value={changeEmailInput}
+                    onChange={e => setChangeEmailInput(e.target.value)}
+                    className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#c29b62]"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3.5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold"
+                  >
+                    Update Email
+                  </button>
+                </form>
+              </div>
+
               {/* Status Badge */}
               <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 space-y-1">
                 <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
@@ -880,7 +1097,7 @@ const AdminPortal: React.FC = () => {
                   Google Authenticator 2FA is Active
                 </span>
                 <p className="text-[11px] text-emerald-800">
-                  Every login strictly requires both your Master PIN and smartphone 6-digit TOTP code.
+                  Every login strictly requires both your authorized email, password, and smartphone 6-digit TOTP code.
                 </p>
               </div>
 
@@ -893,7 +1110,7 @@ const AdminPortal: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  Single-use codes for when your phone is unavailable.
+                  Single-use recovery codes for when your phone is unavailable.
                 </p>
 
                 {newBackupCodes.length > 0 ? (
@@ -925,22 +1142,22 @@ const AdminPortal: React.FC = () => {
                 )}
               </div>
 
-              {/* Change Master PIN Form */}
-              <form onSubmit={handleChangePin} className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <span className="text-xs font-bold text-slate-800 block">Change Master PIN</span>
+              {/* Change Master Password Form */}
+              <form onSubmit={handleChangePassword} className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <span className="text-xs font-bold text-slate-800 block">Change Master Password</span>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="password"
-                    placeholder="New PIN"
-                    value={newPinInput}
-                    onChange={e => setNewPinInput(e.target.value)}
+                    placeholder="New Password (min 6 chars)"
+                    value={newPasswordInput}
+                    onChange={e => setNewPasswordInput(e.target.value)}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#c29b62]"
                   />
                   <input
                     type="password"
-                    placeholder="Confirm New PIN"
-                    value={confirmPinInput}
-                    onChange={e => setConfirmPinInput(e.target.value)}
+                    placeholder="Confirm New Password"
+                    value={confirmPasswordInput}
+                    onChange={e => setConfirmPasswordInput(e.target.value)}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#c29b62]"
                   />
                 </div>
@@ -948,11 +1165,11 @@ const AdminPortal: React.FC = () => {
                   type="submit"
                   className="w-full py-2 rounded-xl bg-[#c29b62] hover:bg-[#b08b53] text-white text-xs font-bold tracking-wider uppercase transition-colors"
                 >
-                  Save New Master PIN
+                  Save New Password
                 </button>
               </form>
 
-              {/* Reset 2FA */}
+              {/* Reset Account / 2FA */}
               <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
                 <span className="text-[11px] text-slate-400">Re-pair Authenticator phone?</span>
                 <button
@@ -960,7 +1177,7 @@ const AdminPortal: React.FC = () => {
                   onClick={handleReset2FA}
                   className="text-xs text-rose-600 hover:text-rose-800 font-semibold"
                 >
-                  Reset & Re-link 2FA
+                  Reset Account & 2FA
                 </button>
               </div>
             </motion.div>

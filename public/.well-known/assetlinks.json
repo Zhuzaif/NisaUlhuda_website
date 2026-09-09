@@ -1,0 +1,17 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.nisaulhuda.hudalabs",
+      "sha256_cert_fingerprints": [
+        "50:30:6B:FE:40:93:3B:E2:F9:C3:00:FE:0B:0C:A5:E1:76:A8:70:31:3F:08:3F:C1:6D:FA:63:FE:F2:65:6A:04",
+        "13:78:0E:25:DD:3E:BD:6F:44:89:AC:E4:7A:C5:91:5B:24:27:7B:5B:12:CF:80:86:2C:E2:50:25:CD:A5:0F:39",
+        "4E:51:6F:F5:7F:A7:0A:58:85:C5:C4:4D:08:92:0E:38:39:7A:EB:36:D7:C0:AA:12:E1:69:24:FA:DA:96:61:42"
+      ]
+    }
+  }
+]

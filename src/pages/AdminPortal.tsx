@@ -33,7 +33,6 @@ import {
   setStoredGitHubToken, 
   publishToGitHub 
 } from '../utils/ayatStorage';
-import { initialAyats } from '../data/defaultAyats';
 import { generateQRMatrix, getQRPath } from '../utils/qrCode';
 import { getOtpAuthUri } from '../utils/totp';
 import { 
@@ -114,7 +113,7 @@ const AdminPortal: React.FC = () => {
   const [publishStatus, setPublishStatus] = useState<{ success?: boolean; message?: string } | null>(null);
 
   // Existing Posters
-  const [existingAyats, setExistingAyats] = useState<DailyAyat[]>(initialAyats);
+  const [existingAyats, setExistingAyats] = useState<DailyAyat[]>([]);
 
   // Deletion State
   const [posterToDelete, setPosterToDelete] = useState<DailyAyat | null>(null);

@@ -16,14 +16,26 @@ export function getDeletedAyatIds(): string[] {
   }
 }
 
-// Get all ayats (combining localStorage + remote/default, filtering out deleted ones)
+// Dummy/mock IDs from old templates that should never be displayed
+const DUMMY_POSTER_IDS = new Set([
+  'surah-al-baqarah-45',
+  'surah-ash-sharh-5-6',
+  'surah-ar-rahman-13'
+]);
+
+// Get all ayats (combining localStorage + remote/default, filtering out deleted & dummy ones)
 export async function getAyats(): Promise<DailyAyat[]> {
-  const deletedIds = new Set(getDeletedAyatIds());
+  const deletedIds = new Set([...getDeletedAyatIds(), ...DUMMY_POSTER_IDS]);
   let localData: DailyAyat[] = [];
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      localData = JSON.parse(stored);
+      const parsed: DailyAyat[] = JSON.parse(stored);
+      // Clean out any cached dummy mock posters
+      localData = parsed.filter(item => !deletedIds.has(item.id));
+      if (localData.length !== parsed.length) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localData));
+      }
     }
   } catch (e) {
     console.error('Failed to read ayats from localStorage', e);
@@ -33,7 +45,7 @@ export async function getAyats(): Promise<DailyAyat[]> {
     const res = await fetch(`${import.meta.env.BASE_URL}data/daily-ayats.json?v=${Date.now()}`);
     if (res.ok) {
       const serverData: DailyAyat[] = await res.json();
-      // Merge unique by id, prioritizing local additions
+      // Merge unique by id, prioritizing server/admin published data
       const map = new Map<string, DailyAyat>();
       serverData.forEach(item => {
         if (!deletedIds.has(item.id)) map.set(item.id, item);
@@ -47,7 +59,7 @@ export async function getAyats(): Promise<DailyAyat[]> {
     console.warn('Could not fetch remote daily-ayats.json, falling back to local/default', err);
   }
 
-  // Fallback to localData or initialAyats
+  // Fallback to localData or real initialAyats
   if (localData.length > 0) {
     const map = new Map<string, DailyAyat>();
     initialAyats.forEach(item => {
@@ -70,7 +82,7 @@ export function saveLocalAyat(ayat: DailyAyat) {
     localStorage.setItem(DELETED_KEY, JSON.stringify(deleted));
 
     const stored = localStorage.getItem(STORAGE_KEY);
-    let list: DailyAyat[] = stored ? JSON.parse(stored) : [...initialAyats];
+    let list: DailyAyat[] = stored ? JSON.parse(stored) : [];
     // Remove if already exists
     list = list.filter(item => item.id !== ayat.id);
     list.unshift(ayat);

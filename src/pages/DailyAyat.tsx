@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Download, Share2, Eye, X, Copy, Check, Sparkles, BookOpen } from 'lucide-react';
 import type { DailyAyat as DailyAyatType } from '../types/ayat';
 import { getAyats } from '../utils/ayatStorage';
-import { initialAyats } from '../data/defaultAyats';
 import { PinterestIcon } from '../components/PinterestIcon';
 import { openPinterestShare } from '../utils/shareUtils';
 
@@ -70,7 +69,8 @@ const ProgressivePosterImage: React.FC<ProgressiveImageProps> = ({ src, alt, cla
 };
 
 const DailyAyat: React.FC = () => {
-  const [ayats, setAyats] = useState<DailyAyatType[]>(initialAyats);
+  const [ayats, setAyats] = useState<DailyAyatType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeModalAyat, setActiveModalAyat] = useState<DailyAyatType | null>(null);
@@ -78,11 +78,16 @@ const DailyAyat: React.FC = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    getAyats().then(data => {
-      if (data && data.length > 0) {
-        setAyats(data);
-      }
-    });
+    getAyats()
+      .then(data => {
+        setAyats(data || []);
+      })
+      .catch(err => {
+        console.error('Failed to load ayats', err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   // Dynamically compile categories from all posters + defaults
@@ -281,7 +286,20 @@ const DailyAyat: React.FC = () => {
       {/* 2. GALLERY GRID (Pinterest-Style Masonry Waterfall Layout) */}
       {/* ========================================================================= */}
       <section className="pb-24 px-6 container mx-auto max-w-6xl">
-        {filteredAyats.length === 0 ? (
+        {isLoading ? (
+          <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 [column-fill:_balance]">
+            {[1, 2, 3].map(item => (
+              <div key={item} className="break-inside-avoid mb-6 bg-white rounded-3xl border border-slate-100 p-5 shadow-sm space-y-4 animate-pulse">
+                <div className="w-full h-64 bg-slate-100 rounded-2xl" />
+                <div className="space-y-2">
+                  <div className="h-4 bg-slate-100 rounded-lg w-2/3" />
+                  <div className="h-3 bg-slate-50 rounded-lg w-full" />
+                  <div className="h-3 bg-slate-50 rounded-lg w-4/5" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredAyats.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-xl max-w-md mx-auto p-8 space-y-4">
             <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-[#c29b62]">
               <BookOpen size={28} />

@@ -20,10 +20,19 @@ import {
   Plus, 
   X,
   Mail,
-  QrCode
+  QrCode,
+  Trash2
 } from 'lucide-react';
 import type { DailyAyat } from '../types/ayat';
-import { getAyats, saveLocalAyat, getStoredGitHubToken, setStoredGitHubToken, publishToGitHub } from '../utils/ayatStorage';
+import { 
+  getAyats, 
+  saveLocalAyat, 
+  deleteLocalAyat, 
+  deleteFromGitHub, 
+  getStoredGitHubToken, 
+  setStoredGitHubToken, 
+  publishToGitHub 
+} from '../utils/ayatStorage';
 import { initialAyats } from '../data/defaultAyats';
 import { generateQRMatrix, getQRPath } from '../utils/qrCode';
 import { getOtpAuthUri } from '../utils/totp';
@@ -106,6 +115,11 @@ const AdminPortal: React.FC = () => {
 
   // Existing Posters
   const [existingAyats, setExistingAyats] = useState<DailyAyat[]>(initialAyats);
+
+  // Deletion State
+  const [posterToDelete, setPosterToDelete] = useState<DailyAyat | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState<{ success?: boolean; message?: string } | null>(null);
 
   // -------------------------------------------------------------
   // Lifecycle & Session Validation (Anti-Bypass)
@@ -394,6 +408,43 @@ const AdminPortal: React.FC = () => {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  const handleConfirmDelete = async (deleteFromRemote: boolean) => {
+    if (!posterToDelete) return;
+    setDeleteStatus(null);
+    setIsDeleting(true);
+
+    try {
+      if (deleteFromRemote) {
+        if (!ghToken) {
+          setShowGhSettings(true);
+          setDeleteStatus({
+            success: false,
+            message: 'GitHub Personal Access Token is required to delete from repository. Please save your token in GitHub Settings.'
+          });
+          setIsDeleting(false);
+          return;
+        }
+        const res = await deleteFromGitHub(ghToken, posterToDelete);
+        setDeleteStatus({ success: true, message: res.message });
+      } else {
+        deleteLocalAyat(posterToDelete.id);
+        setDeleteStatus({
+          success: true,
+          message: `Poster for Surah ${posterToDelete.surahName} (${posterToDelete.ayatNumber}) removed locally.`
+        });
+      }
+      await loadExistingAyats();
+      setTimeout(() => {
+        setPosterToDelete(null);
+        setIsDeleting(false);
+        setDeleteStatus(null);
+      }, 1200);
+    } catch (err: any) {
+      setDeleteStatus({ success: false, message: err.message || 'Failed to delete poster.' });
+      setIsDeleting(false);
+    }
   };
 
   // -------------------------------------------------------------
@@ -1200,26 +1251,158 @@ const AdminPortal: React.FC = () => {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {existingAyats.map(item => (
-              <div key={item.id} className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden shadow-sm group">
+              <div key={item.id} className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden shadow-sm group relative flex flex-col justify-between">
                 <div className="min-h-[140px] max-h-[220px] relative overflow-hidden bg-slate-200 flex items-center justify-center">
                   <img
                     src={item.imageUrl.startsWith('http') ? item.imageUrl : `${import.meta.env.BASE_URL}${item.imageUrl.replace(/^\//, '')}`}
                     alt={item.altText}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-auto max-h-[200px] object-contain group-hover:scale-105 transition-transform"
                   />
+                  {/* Delete Hover Action */}
+                  <button
+                    onClick={() => {
+                      setPosterToDelete(item);
+                      setDeleteStatus(null);
+                    }}
+                    title="Delete Poster"
+                    className="absolute top-2 right-2 w-8 h-8 rounded-xl bg-rose-600/90 hover:bg-rose-700 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg scale-90 group-hover:scale-100"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
-                <div className="p-3 text-center space-y-0.5">
+                <div className="p-3 text-center space-y-1">
                   <span className="text-[11px] font-bold text-slate-900 block truncate">
                     Surah {item.surahName} : {item.ayatNumber}
                   </span>
                   <span className="text-[9px] text-[#c29b62] uppercase font-semibold block truncate">
                     {item.theme || 'Daily Ayat'}
                   </span>
+                  <button
+                    onClick={() => {
+                      setPosterToDelete(item);
+                      setDeleteStatus(null);
+                    }}
+                    className="w-full mt-1 py-1 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-bold tracking-wider flex items-center justify-center gap-1 transition-colors border border-rose-100"
+                  >
+                    <Trash2 size={11} />
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         </section>
+
+        {/* Delete Confirmation Modal */}
+        <AnimatePresence>
+          {posterToDelete && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => !isDeleting && setPosterToDelete(null)}
+                className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+              />
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="relative z-10 w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 text-center"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto shadow-inner">
+                  <Trash2 size={26} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <h3 className="text-xl font-serif font-bold text-slate-900">
+                    Delete Poster?
+                  </h3>
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    Choose whether to delete this poster permanently from the remote GitHub repository or remove it locally only.
+                  </p>
+                </div>
+
+                {/* Poster Info Card */}
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3 text-left">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-300">
+                    <img
+                      src={posterToDelete.imageUrl.startsWith('http') ? posterToDelete.imageUrl : `${import.meta.env.BASE_URL}${posterToDelete.imageUrl.replace(/^\//, '')}`}
+                      alt={posterToDelete.altText}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-bold text-slate-900 truncate">
+                      Surah {posterToDelete.surahName} (Ayat {posterToDelete.ayatNumber})
+                    </h4>
+                    <span className="text-[10px] text-[#c29b62] font-semibold block truncate">
+                      {posterToDelete.theme || 'Daily Ayat'}
+                    </span>
+                    <span className="text-[9px] text-slate-400 block truncate">
+                      {posterToDelete.date}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status / Message Display */}
+                {deleteStatus && (
+                  <div className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                    deleteStatus.success 
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}>
+                    {deleteStatus.success ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
+                    <span className="flex-1 text-left">{deleteStatus.message}</span>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="space-y-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => handleConfirmDelete(true)}
+                    className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" />
+                        Deleting from GitHub...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 size={14} />
+                        Delete from GitHub & Local
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => handleConfirmDelete(false)}
+                    className="w-full bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-semibold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition-colors"
+                  >
+                    Delete Locally Only
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => setPosterToDelete(null)}
+                    className="w-full text-slate-400 hover:text-slate-600 font-medium py-2 text-xs transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
       </main>
     </div>

@@ -281,20 +281,19 @@ const Download: React.FC = () => {
                 </div>
               </a>
 
-              {/* Huawei AppGallery (Under Review) */}
-              <div 
-                className="flex items-center justify-center gap-3 bg-slate-50/80 text-slate-600 py-3.5 px-4 rounded-xl border border-dashed border-slate-300 relative cursor-default"
-                title="Under Review by Huawei AppGallery — Link coming very soon!"
+              {/* Huawei AppGallery */}
+              <a 
+                href="https://appgallery.huawei.com/app/C118882843" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center justify-center gap-3 bg-slate-50 hover:bg-slate-100 text-slate-700 py-3.5 px-4 rounded-xl transition-colors border border-slate-200 group"
               >
-                <HuaweiIcon className="w-6 h-6 text-[#cf0a2c]" />
+                <HuaweiIcon className="w-6 h-6 text-[#cf0a2c] group-hover:scale-110 transition-transform" />
                 <div className="flex flex-col items-start text-left">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Explore on</span>
-                    <span className="text-[9px] bg-amber-100 text-amber-800 font-semibold px-1.5 py-0.5 rounded">In Review</span>
-                  </div>
+                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Explore on</span>
                   <span className="text-sm font-bold leading-none text-slate-800">Huawei AppGallery</span>
                 </div>
-              </div>
+              </a>
             </div>
           </div>
         </div>

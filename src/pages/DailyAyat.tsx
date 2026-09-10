@@ -4,6 +4,8 @@ import { Search, Download, Share2, Eye, X, Copy, Check, Sparkles, BookOpen } fro
 import type { DailyAyat as DailyAyatType } from '../types/ayat';
 import { getAyats } from '../utils/ayatStorage';
 import { initialAyats } from '../data/defaultAyats';
+import { PinterestIcon } from '../components/PinterestIcon';
+import { openPinterestShare } from '../utils/shareUtils';
 
 const defaultThemes = [
   'Sabr & Hope',
@@ -13,6 +15,59 @@ const defaultThemes = [
   'Supplication (Dua)',
   'Guidance & Faith'
 ];
+
+interface ProgressiveImageProps {
+  src: string;
+  alt: string;
+  className?: string;
+  surahName?: string;
+}
+
+const ProgressivePosterImage: React.FC<ProgressiveImageProps> = ({ src, alt, className = '', surahName }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div className="relative w-full overflow-hidden bg-slate-100 min-h-[220px] flex items-center justify-center">
+      {/* Sleek Golden Shimmer Skeleton while loading */}
+      {!loaded && !error && (
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 animate-pulse flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-8 h-8 rounded-full border-2 border-[#c29b62]/30 border-t-[#c29b62] animate-spin mb-2" />
+          <span className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">
+            Loading Calligraphy...
+          </span>
+        </div>
+      )}
+
+      {/* Fallback state if image cannot be loaded */}
+      {error ? (
+        <div className="p-8 text-center space-y-2 bg-gradient-to-b from-[#111421] to-[#0a0c16] text-white w-full min-h-[220px] flex flex-col items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-[#c29b62]/20 border border-[#c29b62]/40 flex items-center justify-center text-[#c29b62] mb-1">
+            <BookOpen size={18} />
+          </div>
+          <span className="text-xs font-serif font-bold text-[#c29b62]">
+            Surah {surahName || 'Al-Quran'}
+          </span>
+          <span className="text-[10px] text-slate-400">
+            Islamic Calligraphy
+          </span>
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          className={`w-full h-auto block object-cover transition-all duration-500 ${
+            loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          } ${className}`}
+        />
+      )}
+    </div>
+  );
+};
 
 const DailyAyat: React.FC = () => {
   const [ayats, setAyats] = useState<DailyAyatType[]>(initialAyats);
@@ -257,12 +312,11 @@ const DailyAyat: React.FC = () => {
                   onClick={() => setActiveModalAyat(ayat)}
                   className="relative overflow-hidden bg-slate-100 cursor-pointer"
                 >
-                  <img
+                  <ProgressivePosterImage
                     src={getFullImageUrl(ayat.imageUrl)}
                     alt={ayat.altText}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-auto block object-cover group-hover:scale-105 transition-transform duration-700"
+                    surahName={ayat.surahName}
+                    className="group-hover:scale-105 transition-transform duration-700"
                   />
 
                   {/* Top Badges */}
@@ -312,23 +366,30 @@ const DailyAyat: React.FC = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-1.5">
                     <button
                       onClick={() => handleCopyText(ayat)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
                       title="Copy Ayat & Translation"
                     >
                       {copiedId === ayat.id ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-                      <span>{copiedId === ayat.id ? 'Copied' : 'Copy'}</span>
+                      <span className="text-[11px]">{copiedId === ayat.id ? 'Copied' : 'Copy'}</span>
                     </button>
 
                     <button
                       onClick={() => handleWhatsAppShare(ayat)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white text-xs font-semibold transition-all border border-[#25D366]/30"
+                      className="p-2.5 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white transition-all border border-[#25D366]/30"
                       title="Share on WhatsApp"
                     >
                       <Share2 size={14} />
-                      <span>WhatsApp</span>
+                    </button>
+
+                    <button
+                      onClick={() => openPinterestShare(ayat)}
+                      className="p-2.5 rounded-xl bg-[#E60023]/10 hover:bg-[#E60023] text-[#E60023] hover:text-white transition-all border border-[#E60023]/30"
+                      title="Save & Pin on Pinterest"
+                    >
+                      <PinterestIcon size={14} />
                     </button>
 
                     <a
@@ -339,7 +400,7 @@ const DailyAyat: React.FC = () => {
                       className="p-2.5 rounded-xl bg-[#c29b62] hover:bg-[#b08b53] text-white transition-colors shadow-md"
                       title="Download High-Res Poster"
                     >
-                      <Download size={16} />
+                      <Download size={15} />
                     </a>
                   </div>
                 </div>
@@ -382,9 +443,10 @@ const DailyAyat: React.FC = () => {
               <div className="grid md:grid-cols-12 gap-0">
                 {/* Left Column: Big Poster View */}
                 <div className="md:col-span-6 bg-slate-900/5 p-4 sm:p-6 flex items-center justify-center border-b md:border-b-0 md:border-r border-slate-200 min-h-[300px]">
-                  <img
+                  <ProgressivePosterImage
                     src={getFullImageUrl(activeModalAyat.imageUrl)}
                     alt={activeModalAyat.altText}
+                    surahName={activeModalAyat.surahName}
                     className="max-h-[70vh] w-auto max-w-full rounded-2xl shadow-xl object-contain border border-slate-200"
                   />
                 </div>
@@ -435,24 +497,32 @@ const DailyAyat: React.FC = () => {
 
                   {/* Actions & Sharing */}
                   <div className="pt-4 border-t border-slate-100 space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <a
                         href={getFullImageUrl(activeModalAyat.imageUrl)}
                         download={`NisaUlHuda-${activeModalAyat.id}.jpg`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-[#c29b62] hover:bg-[#b08b53] text-white py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 shadow-lg transition-all"
+                        className="bg-[#c29b62] hover:bg-[#b08b53] text-white py-3.5 px-3 rounded-xl text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 shadow-lg transition-all"
                       >
-                        <Download size={16} />
+                        <Download size={15} />
                         Download HD
                       </a>
 
                       <button
                         onClick={() => handleWhatsAppShare(activeModalAyat)}
-                        className="bg-[#25D366] hover:bg-[#20ba59] text-white font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-colors"
+                        className="bg-[#25D366] hover:bg-[#20ba59] text-white font-bold py-3.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-colors"
                       >
-                        <Share2 size={16} />
-                        Share Status
+                        <Share2 size={15} />
+                        WhatsApp
+                      </button>
+
+                      <button
+                        onClick={() => openPinterestShare(activeModalAyat)}
+                        className="bg-[#E60023] hover:bg-[#c9001f] text-white font-bold py-3.5 px-3 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-colors"
+                      >
+                        <PinterestIcon size={15} />
+                        Pinterest
                       </button>
                     </div>
 

@@ -6,6 +6,9 @@ import ScrollingSVG from '../components/ScrollingSVG';
 import type { DailyAyat } from '../types/ayat';
 import { initialAyats } from '../data/defaultAyats';
 import { getAyats } from '../utils/ayatStorage';
+import { prefetchRoute } from '../utils/prefetch';
+import { PinterestIcon } from '../components/PinterestIcon';
+import { openPinterestShare } from '../utils/shareUtils';
 
 export const Home: React.FC = () => {
   const [todayAyat, setTodayAyat] = useState<DailyAyat>(initialAyats[0]);
@@ -604,8 +607,18 @@ export const Home: React.FC = () => {
                   WhatsApp Status
                 </a>
 
+                <button
+                  onClick={() => openPinterestShare(todayAyat)}
+                  className="bg-[#E60023] hover:bg-[#c9001f] text-white font-bold py-3.5 px-5 rounded-xl uppercase text-xs tracking-widest inline-flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+                  title="Save & Pin on Pinterest"
+                >
+                  <PinterestIcon size={16} />
+                  Pinterest
+                </button>
+
                 <Link
                   to="/daily-ayat"
+                  onMouseEnter={() => prefetchRoute('daily-ayat', () => import('./DailyAyat'))}
                   className="text-slate-800 hover:text-[#c29b62] text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors py-3.5"
                 >
                   <span>Explore All Posters</span>
@@ -624,6 +637,7 @@ export const Home: React.FC = () => {
             >
               <Link
                 to="/daily-ayat"
+                onMouseEnter={() => prefetchRoute('daily-ayat', () => import('./DailyAyat'))}
                 className="group relative block max-w-[280px] sm:max-w-[310px] rounded-3xl overflow-hidden shadow-2xl border-2 border-[#c29b62]/40 hover:border-[#c29b62] transition-all duration-500 hover:scale-[1.02] bg-white p-2"
               >
                 <div className="rounded-2xl overflow-hidden relative">
